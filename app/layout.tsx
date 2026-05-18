@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
-import { DM_Sans } from "next/font/google";
+import type {Metadata} from "next";
+import {DM_Sans} from "next/font/google";
 import "./globals.css";
-import { QueryProvider } from "@/presentation/providers/query-provider";
+import {QueryProvider} from "@/presentation/providers/query-provider";
+import {APP_NAME} from "@/config/constants";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -9,7 +10,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Khena",
+  title: APP_NAME,
   description: "Khena Website",
 };
 
@@ -19,11 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${dmSans.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col font-sans">
+    <html lang="en" className={`${dmSans.variable} min-h-full antialiased`}>
+      <body>
         <QueryProvider>{children}</QueryProvider>
       </body>
     </html>

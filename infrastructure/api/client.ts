@@ -1,13 +1,8 @@
-import axios, { AxiosError, type AxiosInstance } from "axios";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-if (!BASE_URL) {
-  throw new Error("NEXT_PUBLIC_API_BASE_URL belum di-set di .env.local");
-}
+import axios, {AxiosError, type AxiosInstance} from "axios";
+import {clientEnv} from "@/config/env.client";
 
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: clientEnv.NEXT_PUBLIC_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -19,9 +14,9 @@ apiClient.interceptors.response.use(
   (error: AxiosError<{ message?: string }>) => {
     const status = error.response?.status;
     const message =
-      error.response?.data?.message ??
-      error.message ??
-      "Unknown API error";
-    return Promise.reject(new Error(`API error${status ? ` ${status}` : ""}: ${message}`));
-  },
+      error.response?.data?.message ?? error.message ?? "Unknown API error";
+    return Promise.reject(
+      new Error(`API error${status ? ` ${status}` : ""}: ${message}`)
+    );
+  }
 );
