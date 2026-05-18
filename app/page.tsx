@@ -1,3 +1,6 @@
+import {Icon} from "@/presentation/components/icon";
+import {ICONS} from "@/presentation/components/icons";
+
 export default function Home() {
   return (
     <>
@@ -13,7 +16,7 @@ export default function Home() {
             <li>ABOUT US</li>
           </ul>
 
-
+          <Icon icon={ICONS.home} className="w-6 h-6" />
         </div>
       </nav>
     </>
