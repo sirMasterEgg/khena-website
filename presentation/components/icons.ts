@@ -1,13 +1,18 @@
-import { faHouse, faUser, faGear } from "@fortawesome/free-solid-svg-icons";
-import { faHeart } from "@fortawesome/free-regular-svg-icons";
-import { faGithub } from "@fortawesome/free-brands-svg-icons";
+import {
+  FaHouse,
+  FaUser,
+  FaGear,
+  FaRegHeart,
+  FaGithub,
+} from "react-icons/fa6";
+import type {IconComponent} from "./icon";
 
 export const ICONS = {
-  home: faHouse,
-  user: faUser,
-  settings: faGear,
-  heartOutline: faHeart,
-  github: faGithub,
-} as const;
+  home: FaHouse,
+  user: FaUser,
+  settings: FaGear,
+  heartOutline: FaRegHeart,
+  github: FaGithub,
+} as const satisfies Record<string, IconComponent>;
 
 export type IconName = keyof typeof ICONS;

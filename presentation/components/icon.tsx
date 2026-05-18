@@ -1,12 +1,11 @@
-import {
-  FontAwesomeIcon,
-  type FontAwesomeIconProps,
-} from "@fortawesome/react-fontawesome";
+import type {IconType, IconBaseProps} from "react-icons";
 
-export type IconProps = Omit<FontAwesomeIconProps, "icon"> & {
-  icon: FontAwesomeIconProps["icon"];
+export type IconComponent = IconType;
+
+export type IconProps = IconBaseProps & {
+  icon: IconType;
 };
 
-export function Icon({ icon, ...rest }: IconProps) {
-  return <FontAwesomeIcon icon={icon} {...rest} />;
+export function Icon({icon: IconImpl, ...rest}: IconProps) {
+  return <IconImpl {...rest} />;
 }
