@@ -49,7 +49,7 @@ export function Footer() {
               Join our list and receive 10% off your first order, plus early access to new pieces.
             </p>
             <NewsletterForm />
-            <p className="mt-3 text-xs text-faint">
+            <p className="mt-3 text-xs text-muted">
               By subscribing you agree to our Privacy Policy and consent to receive updates.
             </p>
           </div>

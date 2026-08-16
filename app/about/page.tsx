@@ -4,6 +4,7 @@ import {PlaceholderImage} from "@/presentation/components/ui/placeholder-image";
 import {TextLink} from "@/presentation/components/ui/text-link";
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
+import {RevealStagger} from "@/presentation/components/motion/reveal-stagger";
 
 export const metadata: Metadata = {
   title: "About Us",
@@ -67,7 +68,10 @@ export default function AboutPage() {
           </p>
         </div>
 
-        <div className="mt-20 grid grid-cols-1 gap-15 sm:grid-cols-3">
+        <RevealStagger
+          className="mt-20 grid grid-cols-1 gap-15 sm:grid-cols-3"
+          itemClassName="flex flex-col items-center"
+        >
           {VALUES.map((value) => (
             <div key={value.title} className="flex flex-col items-center">
               <span className="flex size-17 items-center justify-center rounded-full border border-hairline">
@@ -77,7 +81,7 @@ export default function AboutPage() {
               <p className="mt-2 text-base text-muted">{value.body}</p>
             </div>
           ))}
-        </div>
+        </RevealStagger>
       </Container>
 
       <div className="bg-warm py-20 lg:py-30">

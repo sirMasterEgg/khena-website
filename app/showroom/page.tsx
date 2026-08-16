@@ -4,6 +4,7 @@ import {PlaceholderImage} from "@/presentation/components/ui/placeholder-image";
 import {Button} from "@/presentation/components/ui/button";
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
+import {RevealStagger} from "@/presentation/components/motion/reveal-stagger";
 
 export const metadata: Metadata = {
   title: "Showroom",
@@ -68,7 +69,10 @@ export default function ShowroomPage() {
       </Container>
 
       <Container className="py-20 lg:py-30">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <RevealStagger
+          className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4"
+          itemClassName="text-center"
+        >
           {SERVICES.map((service) => (
             <div key={service.title} className="text-center">
               <span className="mx-auto flex size-14 items-center justify-center rounded-full border-2 border-hairline">
@@ -78,7 +82,7 @@ export default function ShowroomPage() {
               <p className="mx-auto mt-2 max-w-62.5 text-sm text-muted">{service.body}</p>
             </div>
           ))}
-        </div>
+        </RevealStagger>
       </Container>
 
       <div className="h-195 w-full bg-cover">
