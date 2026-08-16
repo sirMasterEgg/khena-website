@@ -1,5 +1,126 @@
 @import "tailwindcss";
 
-@theme {
+/*
+ * Lapis 1 — nilai mentah. Tema alternatif (ash/bronze/linen) nanti ditambah
+ * dengan menimpa `:root[data-palette="..."]` di sini tanpa menyentuh komponen.
+ */
+:root {
+  --bg: #f9f8f4;
+  --bg-warm: #f4efea;
+  --bg-warm-2: #f2eeeb;
+  --ink: #121212;
+  --ink-soft: #29261b;
+  --muted: #49403b;
+  --hairline: #ddd9d4;
+  --faint: #9a9a9a;
+  --tile: #d9d9d9;
+  --accent: #c58a6a;
+  --invert: #ffffff;
+  --danger: #b94a48;
+}
+
+/* Lapis 2 — pemetaan ke Tailwind. */
+@theme inline {
+  --color-cream: var(--bg);
+  --color-warm: var(--bg-warm);
+  --color-warm-2: var(--bg-warm-2);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-hairline: var(--hairline);
+  --color-faint: var(--faint);
+  --color-tile: var(--tile);
+  --color-accent: var(--accent);
+  --color-invert: var(--invert);
+  --color-danger: var(--danger);
+
+  --font-display: var(--font-cormorant), ui-serif, Georgia, serif;
   --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --text-h1: clamp(48px, 6.2vw, 96px);
+  --text-h1--line-height: 1.05;
+  --text-h1--letter-spacing: -0.01em;
+  --text-h1--font-weight: 300;
+
+  --text-h2: clamp(36px, 4vw, 60px);
+  --text-h2--line-height: 1.05;
+  --text-h2--letter-spacing: -0.01em;
+  --text-h2--font-weight: 300;
+
+  --text-h3: clamp(28px, 2.5vw, 44px);
+  --text-h3--line-height: 1.1;
+  --text-h3--font-weight: 300;
+
+  --text-hero: clamp(54px, 7vw, 108px);
+  --text-hero--line-height: 1.05;
+  --text-hero--letter-spacing: -0.01em;
+  --text-hero--font-weight: 300;
+
+  --text-eyebrow: 12px;
+  --text-eyebrow--letter-spacing: 0.18em;
+  --text-eyebrow--line-height: 1.4;
+
+  --text-body-lg: 20px;
+  --text-body-lg--line-height: 1.5;
+  --text-body-lg--font-weight: 300;
+
+  --text-lead: clamp(22px, 2.4vw, 30px);
+  --text-lead--line-height: 1.35;
+  --text-lead--font-weight: 300;
+
+  --tracking-button: 0.06em;
+  --tracking-label: 0.16em;
+  --tracking-eyebrow: 0.18em;
+  --tracking-wordmark: 0.34em;
+
+  --ease-brand: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes ken-burns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scroll-cue {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  50% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  50.01% {
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
