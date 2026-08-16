@@ -80,6 +80,9 @@
   --animate-drawer-in-top: drawer-in-top 500ms var(--ease-brand) both;
   --animate-wishlist-save: wishlist-save 500ms var(--ease-brand);
   --animate-wishlist-remove: wishlist-remove 400ms var(--ease-brand);
+  --animate-ken-burns: ken-burns 8s var(--ease-brand) forwards;
+  --animate-reveal-up: reveal-up 700ms var(--ease-brand) both;
+  --animate-scroll-cue: scroll-cue 2.4s ease-in-out infinite;
 }
 
 @keyframes ken-burns {
