@@ -3,12 +3,15 @@
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
 import {useUi} from "@/presentation/providers/ui-provider";
+import {useCart} from "@/presentation/providers/cart-provider";
 
 /** Ikon Search, Account, Cart, dan Hamburger di kanan navbar — bagian 3.1 issue.md. */
 export function NavbarActions() {
   const {open, toggle, isOpen} = useUi();
-  // TODO(ISSUE-09): ganti dengan jumlah item asli dari CartProvider.
-  const cartItemCount = 0;
+  const {itemCount, isHydrated} = useCart();
+  // Badge hanya dirender setelah cart selesai dibaca dari localStorage,
+  // supaya tidak terjadi hydration mismatch — bagian 2.7 issue.md.
+  const cartItemCount = isHydrated ? itemCount : 0;
 
   return (
     <div className="flex items-center justify-end gap-5">
