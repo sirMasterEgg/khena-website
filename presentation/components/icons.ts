@@ -11,6 +11,8 @@ import {
   FaXmark,
   FaInstagram,
   FaWhatsapp,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa6";
 import type {IconComponent} from "./icon";
 
@@ -27,6 +29,8 @@ export const ICONS = {
   close: FaXmark,
   instagram: FaInstagram,
   whatsapp: FaWhatsapp,
+  chevronLeft: FaChevronLeft,
+  chevronRight: FaChevronRight,
 } as const satisfies Record<string, IconComponent>;
 
 export type IconName = keyof typeof ICONS;
