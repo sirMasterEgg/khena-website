@@ -23,6 +23,7 @@ import {
   FaPencil,
   FaCalendarCheck,
   FaFileArrowUp,
+  FaFileLines,
 } from "react-icons/fa6";
 import type {IconComponent} from "./icon";
 
@@ -51,6 +52,7 @@ export const ICONS = {
   pencil: FaPencil,
   calendarCheck: FaCalendarCheck,
   fileUpload: FaFileArrowUp,
+  document: FaFileLines,
 } as const satisfies Record<string, IconComponent>;
 
 export type IconName = keyof typeof ICONS;
