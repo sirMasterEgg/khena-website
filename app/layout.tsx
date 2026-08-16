@@ -1,7 +1,7 @@
 import type {Metadata} from "next";
 import {Cormorant_Garamond, DM_Sans} from "next/font/google";
 import "./globals.css";
-import {QueryProvider} from "@/presentation/providers/query-provider";
+import {AppProviders} from "@/presentation/providers/app-providers";
 import {APP_NAME} from "@/config/constants";
 
 const cormorant = Cormorant_Garamond({
@@ -32,7 +32,7 @@ export default function RootLayout({
       className={`${cormorant.variable} ${dmSans.variable} min-h-full antialiased`}
     >
       <body className="bg-cream text-ink font-sans">
-        <QueryProvider>{children}</QueryProvider>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );
