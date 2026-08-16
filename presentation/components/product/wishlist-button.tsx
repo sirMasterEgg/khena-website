@@ -5,10 +5,8 @@ import type {MouseEvent} from "react";
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
 import {cn} from "@/presentation/lib/cn";
-
-// TODO(ISSUE-14): ganti dua baris ini dengan AuthProvider (login) dan
-// WishlistProvider (status tersimpan sungguhan dari server).
-const TEMP_IS_LOGGED_IN = true;
+import {useAuth} from "@/presentation/providers/auth-provider";
+import {useWishlist} from "@/presentation/providers/wishlist-provider";
 
 export type WishlistButtonProps = {
   productId: string;
@@ -22,28 +20,26 @@ export type WishlistButtonProps = {
  * baru setelah itu komponen boleh merender `null` kalau belum login.
  */
 export function WishlistButton({productId, productName, className}: WishlistButtonProps) {
-  const [isSaved, setIsSaved] = useState(false);
+  const {user} = useAuth();
+  const {isSaved, toggle} = useWishlist();
   const [pulse, setPulse] = useState<"save" | "remove" | null>(null);
+  const saved = isSaved(productId);
 
-  if (!TEMP_IS_LOGGED_IN) return null;
+  if (!user) return null;
 
   function handleClick(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
-    setIsSaved((prev) => {
-      const next = !prev;
-      setPulse(next ? "save" : "remove");
-      return next;
-    });
-    // TODO(ISSUE-14): panggil WishlistProvider.toggle(productId) sungguhan.
+    const outcome = toggle(productId);
+    setPulse(outcome === "saved" ? "save" : "remove");
   }
 
   return (
     <button
       type="button"
       data-product-id={productId}
-      aria-label={isSaved ? `Remove ${productName} from wishlist` : `Save ${productName} to wishlist`}
-      aria-pressed={isSaved}
+      aria-label={saved ? `Remove ${productName} from wishlist` : `Save ${productName} to wishlist`}
+      aria-pressed={saved}
       onClick={handleClick}
       className={cn(
         "flex size-8 items-center justify-center bg-cream/90 text-ink transition-colors duration-300 ease-brand",
@@ -59,8 +55,8 @@ export function WishlistButton({productId, productName, className}: WishlistButt
         )}
       >
         <Icon
-          icon={isSaved ? ICONS.heart : ICONS.heartOutline}
-          className={cn("size-4", isSaved && "text-accent")}
+          icon={saved ? ICONS.heart : ICONS.heartOutline}
+          className={cn("size-4", saved && "text-accent")}
         />
       </span>
     </button>
