@@ -13,6 +13,7 @@ import {
   FaWhatsapp,
   FaChevronLeft,
   FaChevronRight,
+  FaLock,
 } from "react-icons/fa6";
 import type {IconComponent} from "./icon";
 
@@ -31,6 +32,7 @@ export const ICONS = {
   whatsapp: FaWhatsapp,
   chevronLeft: FaChevronLeft,
   chevronRight: FaChevronRight,
+  lock: FaLock,
 } as const satisfies Record<string, IconComponent>;
 
 export type IconName = keyof typeof ICONS;
