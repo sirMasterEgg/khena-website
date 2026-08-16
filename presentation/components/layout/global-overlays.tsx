@@ -1,5 +1,6 @@
 import {MobileMenu} from "@/presentation/components/layout/mobile-menu";
 import {SearchOverlay} from "@/presentation/components/search/search-overlay";
+import {CartDrawer} from "@/presentation/components/cart/cart-drawer";
 import type {Category} from "@/domain/entities/category";
 import type {Collection} from "@/domain/entities/collection";
 import type {Product} from "@/domain/entities/product";
@@ -25,6 +26,7 @@ export function GlobalOverlays({
         categoryNameBySlug={categoryNameBySlug}
         collectionNameBySlug={collectionNameBySlug}
       />
+      <CartDrawer />
     </>
   );
 }

@@ -17,6 +17,7 @@ import {formatDimensions, formatIDR} from "@/presentation/lib/format";
 import {cn} from "@/presentation/lib/cn";
 import {useToast} from "@/presentation/providers/toast-provider";
 import {useUi} from "@/presentation/providers/ui-provider";
+import {useCart} from "@/presentation/providers/cart-provider";
 import type {Collection} from "@/domain/entities/collection";
 
 export type ProductDetailProps = {
@@ -35,6 +36,7 @@ export function ProductDetail({product, collection, relatedProducts}: ProductDet
   const [qty, setQty] = useState(1);
   const {toast} = useToast();
   const {open: openOverlay} = useUi();
+  const {addItem} = useCart();
 
   const swatch = selectedColor ? COLOR_SWATCHES[selectedColor] : undefined;
   const cardBackground = swatch?.cardBackground ?? "#F4EFEA";
@@ -46,8 +48,12 @@ export function ProductDetail({product, collection, relatedProducts}: ProductDet
   const collectionName = collection?.name ?? product.collection;
 
   function handleAddToCart() {
-    // TODO(ISSUE-09): panggil CartProvider.addItem() sungguhan (id + color + qty).
+    addItem(product, selectedColor, swatch?.label, qty);
     toast(`${product.name} added to bag`);
+  }
+
+  function handleJoinWaitlist() {
+    toast(`We'll let you know when ${product.name} is back in stock`);
   }
 
   function handleMakeItYours() {
@@ -176,7 +182,7 @@ export function ProductDetail({product, collection, relatedProducts}: ProductDet
 
           <div className="mt-8 space-y-3">
             {soldOut ? (
-              <Button variant="dark" size="lg" className="w-full" onClick={handleAddToCart}>
+              <Button variant="dark" size="lg" className="w-full" onClick={handleJoinWaitlist}>
                 Join the Waitlist
               </Button>
             ) : (
