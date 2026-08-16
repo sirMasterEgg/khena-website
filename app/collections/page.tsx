@@ -4,6 +4,7 @@ import {getLiveProducts} from "@/application/use-cases/get-live-products";
 import {Container} from "@/presentation/components/ui/container";
 import {Eyebrow} from "@/presentation/components/ui/eyebrow";
 import {CollectionCard} from "@/presentation/components/product/collection-card";
+import {RevealStagger} from "@/presentation/components/motion/reveal-stagger";
 
 export const metadata: Metadata = {
   title: "Signature Collections",
@@ -27,7 +28,7 @@ export default async function CollectionsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 py-15 sm:grid-cols-2 lg:grid-cols-3 lg:py-30">
+      <RevealStagger className="grid grid-cols-1 gap-8 py-15 sm:grid-cols-2 lg:grid-cols-3 lg:py-30">
         {collections.map((collection) => (
           <CollectionCard
             key={collection.id}
@@ -35,7 +36,7 @@ export default async function CollectionsPage() {
             pieceCount={liveProducts.filter((p) => p.collection === collection.slug).length}
           />
         ))}
-      </div>
+      </RevealStagger>
     </Container>
   );
 }

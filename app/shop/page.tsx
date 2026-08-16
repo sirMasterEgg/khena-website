@@ -8,6 +8,7 @@ import {ShopFilterBar} from "@/presentation/components/shop/shop-filter-bar";
 import {Container} from "@/presentation/components/ui/container";
 import {TextLink} from "@/presentation/components/ui/text-link";
 import {PlaceholderImage} from "@/presentation/components/ui/placeholder-image";
+import {RevealStagger} from "@/presentation/components/motion/reveal-stagger";
 
 const SORT_MODES = new Set<ProductSortMode>(["featured", "name-asc", "price-asc", "price-desc"]);
 
@@ -80,7 +81,7 @@ export default async function ShopPage({
         {sortedProducts.length === 0 ? (
           <p className="py-20 text-center text-sm text-muted">No pieces match this filter.</p>
         ) : (
-          <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3">
+          <RevealStagger className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3">
             {sortedProducts.map((product) => (
               <ProductCard
                 key={product.id}
@@ -89,7 +90,7 @@ export default async function ShopPage({
                 showQuickAdd={false}
               />
             ))}
-          </div>
+          </RevealStagger>
         )}
 
         <div className="mt-15 text-center">

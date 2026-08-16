@@ -48,7 +48,7 @@ export function PaymentMethodPicker({value, onChange}: PaymentMethodPickerProps)
           <p className="text-xs uppercase tracking-label text-muted">{method.badge}</p>
           <p className="mt-1 text-sm">{method.label}</p>
           <p className="mt-2 text-xs text-muted">{method.note}</p>
-          <p className="mt-3 text-xs uppercase tracking-label text-faint">Powered by Xendit</p>
+          <p className="mt-3 text-xs uppercase tracking-label text-muted">Powered by Xendit</p>
         </button>
       ))}
     </div>
