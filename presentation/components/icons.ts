@@ -14,6 +14,15 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaLock,
+  FaEnvelope,
+  FaPhone,
+  FaRegClock,
+  FaLocationDot,
+  FaCompass,
+  FaSwatchbook,
+  FaPencil,
+  FaCalendarCheck,
+  FaFileArrowUp,
 } from "react-icons/fa6";
 import type {IconComponent} from "./icon";
 
@@ -33,6 +42,15 @@ export const ICONS = {
   chevronLeft: FaChevronLeft,
   chevronRight: FaChevronRight,
   lock: FaLock,
+  envelope: FaEnvelope,
+  phone: FaPhone,
+  clock: FaRegClock,
+  mapPin: FaLocationDot,
+  compass: FaCompass,
+  swatchbook: FaSwatchbook,
+  pencil: FaPencil,
+  calendarCheck: FaCalendarCheck,
+  fileUpload: FaFileArrowUp,
 } as const satisfies Record<string, IconComponent>;
 
 export type IconName = keyof typeof ICONS;
