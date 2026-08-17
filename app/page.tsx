@@ -1,24 +1,33 @@
-import {Icon} from "@/presentation/components/icon";
-import {ICONS} from "@/presentation/components/icons";
+import {getVisibleCollections} from "@/application/use-cases/get-visible-collections";
+import {getSiteSettings} from "@/application/use-cases/get-site-settings";
+import {getLiveProducts} from "@/application/use-cases/get-live-products";
+import {isAvailable} from "@/domain/entities/product";
+import {HeroSection} from "@/presentation/components/landing/hero-section";
+import {CollectionCarousel} from "@/presentation/components/landing/collection-carousel";
+import {MaterialsCarousel} from "@/presentation/components/landing/materials-carousel";
+import {DesignedForLife} from "@/presentation/components/landing/designed-for-life";
+import {ProductHeroBanner} from "@/presentation/components/landing/product-hero-banner";
 
-export default function Home() {
+export default async function Home() {
+  const [collections, siteSettings, liveProducts] = await Promise.all([
+    getVisibleCollections(),
+    getSiteSettings(),
+    getLiveProducts(),
+  ]);
+
+  const featuredProducts = liveProducts.filter(isAvailable).slice(0, 3);
+
   return (
     <>
-      <nav className="w-full h-20 border-b">
-        <div className="flex items-center justify-between container mx-auto">
-          <span className="text-xl font-bold">KHENA</span>
-
-          <ul className="inline-flex flex-row gap-5">
-            <li>SHOP</li>
-            <li>COLLECTION</li>
-            <li>CONTACT</li>
-            <li>SHOWROOM</li>
-            <li>ABOUT US</li>
-          </ul>
-
-          <Icon icon={ICONS.home} className="w-6 h-6" />
-        </div>
-      </nav>
+      <HeroSection />
+      <CollectionCarousel
+        collections={collections}
+        intervalMs={siteSettings.collectionCarouselIntervalMs}
+      />
+      <MaterialsCarousel />
+      <DesignedForLife products={featuredProducts} />
+      <ProductHeroBanner />
+      <div className="h-35" aria-hidden="true" />
     </>
   );
 }
