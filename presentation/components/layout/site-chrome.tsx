@@ -26,7 +26,12 @@ export async function SiteChrome({children}: {children: ReactNode}) {
       <Navbar shopGroups={shopGroups} collections={collections} />
       {children}
       <Footer />
-      <GlobalOverlays products={products} categories={categories} collections={collections} />
+      <GlobalOverlays
+        products={products}
+        categories={categories}
+        collections={collections}
+        shopGroups={shopGroups}
+      />
     </>
   );
 }

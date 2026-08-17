@@ -143,10 +143,18 @@ export function AccountDrawer() {
             </div>
 
             <div className="mt-10 space-y-3 border-t border-hairline pt-6 text-sm">
-              <Link href="/checkout" onClick={close} className="block hover:text-accent">
+              <Link
+                href="/checkout"
+                onClick={close}
+                className="block transition-colors duration-300 ease-brand hover:text-accent"
+              >
                 Track My Order
               </Link>
-              <Link href="/shop" onClick={close} className="block hover:text-accent">
+              <Link
+                href="/shop"
+                onClick={close}
+                className="block transition-colors duration-300 ease-brand hover:text-accent"
+              >
                 Continue Shopping
               </Link>
             </div>

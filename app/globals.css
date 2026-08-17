@@ -76,6 +76,8 @@
   --ease-brand: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   --animate-fade-in: fade-in 400ms var(--ease-brand) both;
+  --animate-fade-down: fade-down 300ms var(--ease-brand) both;
+  --animate-fade-out-up: fade-out-up 200ms var(--ease-brand) both;
   --animate-drawer-in-right: drawer-in-right 500ms var(--ease-brand) both;
   --animate-drawer-in-top: drawer-in-top 500ms var(--ease-brand) both;
   --animate-wishlist-save: wishlist-save 500ms var(--ease-brand);
@@ -111,6 +113,28 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes fade-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-out-up {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
   }
 }
 

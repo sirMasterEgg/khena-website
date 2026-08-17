@@ -37,7 +37,7 @@ export function NavbarActions() {
       <button
         type="button"
         aria-label={isOpen("mobileMenu") ? "Close menu" : "Open menu"}
-        className="md:hidden"
+        className="lg:hidden"
         onClick={() => toggle("mobileMenu")}
       >
         <Icon icon={isOpen("mobileMenu") ? ICONS.close : ICONS.menu} className="size-5" />

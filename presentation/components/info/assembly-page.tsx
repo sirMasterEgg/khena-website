@@ -50,7 +50,7 @@ export function AssemblyPage() {
                   href={`/manuals/${manual.fileName}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="shrink-0 text-xs uppercase tracking-label hover:text-accent"
+                  className="shrink-0 text-xs uppercase tracking-label transition-colors duration-300 ease-brand hover:text-accent"
                 >
                   Open PDF
                 </a>
