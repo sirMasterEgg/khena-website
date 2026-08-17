@@ -107,7 +107,11 @@ export function SearchOverlay({
 
           <div className="mt-8">
             {query.trim() === "" ? (
-              <div className="flex flex-wrap items-center gap-6">
+              <div className="flex flex-wrap items-baseline gap-6">
+                {/* `items-baseline` (bukan `items-center`) supaya teks "Popular"
+                    sejajar dengan teks Chip — Chip punya `pb-1 border-b-2`
+                    ekstra di bawah yang bikin box-nya lebih tinggi, jadi
+                    `items-center` menggeser baseline teksnya. */}
                 <span className="text-xs uppercase tracking-label text-muted">Popular</span>
                 {POPULAR_TERMS.map((term) => (
                   <Chip key={term} onClick={() => setQuery(term)}>
