@@ -44,16 +44,26 @@ export function CarePage() {
                     )}
                   />
                 </button>
-                {open ? (
-                  <div className="pb-5 text-sm text-muted">
-                    <p>{material.intro}</p>
-                    <ul className="mt-3 list-disc space-y-1 pl-4">
-                      {material.tips.map((tip) => (
-                        <li key={tip}>{tip}</li>
-                      ))}
-                    </ul>
+                {/* Trik `grid-template-rows: 0fr -> 1fr` supaya buka/tutup
+                    bertransisi ke tinggi konten sebenarnya, bukan instan
+                    seperti render kondisional biasa. */}
+                <div
+                  className={cn(
+                    "grid transition-[grid-template-rows] duration-300 ease-brand",
+                    open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                  )}
+                >
+                  <div className="overflow-hidden">
+                    <div aria-hidden={!open} className="pb-5 text-sm text-muted">
+                      <p>{material.intro}</p>
+                      <ul className="mt-3 list-disc space-y-1 pl-4">
+                        {material.tips.map((tip) => (
+                          <li key={tip}>{tip}</li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                ) : null}
+                </div>
               </div>
             );
           })}
