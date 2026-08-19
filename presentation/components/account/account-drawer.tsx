@@ -17,7 +17,20 @@ import {useToast} from "@/presentation/providers/toast-provider";
 import {useSavedProducts} from "@/application/hooks/use-saved-products";
 import {formatIDR} from "@/presentation/lib/format";
 
-type GuestMode = "signin" | "register" | "confirm";
+type GuestMode = "signin" | "register";
+
+// Pesan validasi di bawah ini wajib identik dengan backend (bagian 5
+// issue.md / contract.md) supaya user tidak pernah lolos di client lalu
+// ditolak server dengan kalimat yang berbeda.
+const PASSWORD_MESSAGE =
+  "password must be at least 8 characters and contain a letter and a number";
+
+const passwordSchema = z
+  .string()
+  .min(8, PASSWORD_MESSAGE)
+  .max(128, PASSWORD_MESSAGE)
+  .regex(/[a-zA-Z]/, PASSWORD_MESSAGE)
+  .regex(/[0-9]/, PASSWORD_MESSAGE);
 
 const signInSchema = z.object({
   email: z.string().trim().min(1, "Email is required").email("Enter a valid email address"),
@@ -26,17 +39,26 @@ const signInSchema = z.object({
 type SignInValues = z.infer<typeof signInSchema>;
 
 const registerSchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Name must be between 2 and 255 characters")
+    .max(255, "Name must be between 2 and 255 characters"),
   email: z.string().trim().min(1, "Email is required").email("Enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: passwordSchema,
+  phone: z
+    .string()
+    .trim()
+    .max(20, "Enter a valid phone number")
+    .regex(/^\+?[0-9][0-9 -]{6,18}$/, "Enter a valid phone number"),
 });
 type RegisterValues = z.infer<typeof registerSchema>;
 
-/** Account drawer — empat mode (bagian 3.4 issue.md). */
+/** Account drawer — sign in / register lewat sesi better-auth (ISSUE-17). */
 export function AccountDrawer() {
   const {isOpen, close} = useUi();
   const open = isOpen("account");
-  const {user, signIn, register: registerAccount, signOut} = useAuth();
+  const {user, signIn, signUp, signOut} = useAuth();
   const {toast} = useToast();
   const savedProducts = useSavedProducts();
 
@@ -64,11 +86,7 @@ export function AccountDrawer() {
     setFormError(undefined);
     const result = await signIn(values.email, values.password);
     if (!result.ok) {
-      setFormError(
-        result.error === "email-not-confirmed"
-          ? "Email not confirmed — please check your inbox for the verification link."
-          : "Invalid login — check your email and password and try again."
-      );
+      setFormError(result.message);
       return;
     }
     toast("Signed in successfully.");
@@ -77,16 +95,21 @@ export function AccountDrawer() {
 
   async function handleRegister(values: RegisterValues) {
     setFormError(undefined);
-    const result = await registerAccount(values.name, values.email, values.password);
+    const result = await signUp(values);
     if (!result.ok) {
-      setFormError(result.error);
+      setFormError(result.message);
       return;
     }
-    setMode("confirm");
+    // Backend: autoSignIn === true + requireEmailVerification === false, jadi
+    // begitu signUp sukses user sudah punya sesi — sama seperti sign in.
+    // (Kalau verifikasi email diaktifkan nanti — Fase 7 issue.md — alur ini
+    // perlu layar konfirmasi lagi.)
+    toast("Account created — welcome to Khena.");
+    close();
   }
 
-  function handleSignOut() {
-    signOut();
+  async function handleSignOut() {
+    await signOut();
     toast("Signed out.");
     close();
   }
@@ -144,6 +167,13 @@ export function AccountDrawer() {
 
             <div className="mt-10 space-y-3 border-t border-hairline pt-6 text-sm">
               <Link
+                href="/account"
+                onClick={close}
+                className="block transition-colors duration-300 ease-brand hover:text-accent"
+              >
+                View Account
+              </Link>
+              <Link
                 href="/checkout"
                 onClick={close}
                 className="block transition-colors duration-300 ease-brand hover:text-accent"
@@ -161,17 +191,6 @@ export function AccountDrawer() {
 
             <Button variant="dark" className="mt-10 w-full" onClick={handleSignOut}>
               Sign Out
-            </Button>
-          </div>
-        ) : mode === "confirm" ? (
-          <div className="text-center">
-            <p className="font-display text-h3">Check Your Email</p>
-            <p className="mt-4 text-sm text-muted">
-              We&apos;ve sent a verification link to your inbox. Confirm your email to finish
-              setting up your account.
-            </p>
-            <Button variant="dark" className="mt-8 w-full" onClick={() => switchMode("signin")}>
-              Back to Sign In
             </Button>
           </div>
         ) : mode === "signin" ? (
@@ -199,6 +218,11 @@ export function AccountDrawer() {
               Sign In
             </Button>
             <p className="text-center text-xs text-muted">
+              <Link href="/forgot-password" onClick={close} className="underline">
+                Forgot password?
+              </Link>
+            </p>
+            <p className="text-center text-xs text-muted">
               New to Khena?{" "}
               <button type="button" className="underline" onClick={() => switchMode("register")}>
                 Create an account
@@ -217,6 +241,12 @@ export function AccountDrawer() {
               type="email"
               {...registerForm.register("email")}
               error={registerForm.formState.errors.email?.message}
+            />
+            <FormField
+              label="Phone"
+              type="tel"
+              {...registerForm.register("phone")}
+              error={registerForm.formState.errors.phone?.message}
             />
             <FormField
               label="Password"
