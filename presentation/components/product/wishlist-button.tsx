@@ -5,7 +5,6 @@ import type {MouseEvent} from "react";
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
 import {cn} from "@/presentation/lib/cn";
-import {useAuth} from "@/presentation/providers/auth-provider";
 import {useWishlist} from "@/presentation/providers/wishlist-provider";
 
 export type WishlistButtonProps = {
@@ -16,16 +15,17 @@ export type WishlistButtonProps = {
 
 /**
  * Tombol wishlist — komponen terpisah dari ProductCard (bagian 6.2 issue.md).
- * Hook selalu dipanggil di urutan yang sama baik user login maupun tidak;
- * baru setelah itu komponen boleh merender `null` kalau belum login.
+ *
+ * Sengaja TIDAK digerbang oleh status login (beda dari sebelum ISSUE-17):
+ * tamu boleh menyimpan wishlist lokal (`khena.wishlist.guest`) yang nanti
+ * digabung otomatis ke akun begitu dia sign in — lihat wishlist-provider.tsx
+ * bagian 8a issue.md. Menyembunyikan tombol ini untuk tamu akan membuat fitur
+ * itu tidak pernah bisa dipakai dari UI.
  */
 export function WishlistButton({productId, productName, className}: WishlistButtonProps) {
-  const {user} = useAuth();
   const {isSaved, toggle} = useWishlist();
   const [pulse, setPulse] = useState<"save" | "remove" | null>(null);
   const saved = isSaved(productId);
-
-  if (!user) return null;
 
   function handleClick(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
