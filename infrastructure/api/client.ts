@@ -7,6 +7,9 @@ export const apiClient: AxiosInstance = axios.create({
     "Content-Type": "application/json",
   },
   timeout: 15_000,
+  // Endpoint bisnis yang butuh sesi user mengandalkan cookie sesi dari
+  // better-auth — tanpa ini request lintas origin dianggap tamu.
+  withCredentials: true,
 });
 
 apiClient.interceptors.response.use(
