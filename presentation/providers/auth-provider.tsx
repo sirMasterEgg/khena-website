@@ -27,7 +27,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
  * sendiri untuk sesi (bagian 3 keputusan #3 issue.md).
  */
 export function AuthProvider({children}: {children: ReactNode}) {
-  const {data, isPending} = authClient.useSession();
+  const {data, isPending, refetch} = authClient.useSession();
   const user = data?.user ?? null;
 
   const signIn = useCallback(async (email: string, password: string): Promise<Result> => {
@@ -55,9 +55,13 @@ export function AuthProvider({children}: {children: ReactNode}) {
     async (input: {name?: string; phone?: string}): Promise<Result> => {
       const {error} = await authClient.updateUser(input);
       if (error) return {ok: false, message: authErrorMessage(error)};
+      // Klien better-auth biasanya memperbarui cache sesi sendiri, tapi
+      // di-refetch eksplisit sebagai jaring pengaman — bukan
+      // `window.location.reload()` (bagian Fase 6 issue.md).
+      refetch();
       return {ok: true};
     },
-    []
+    [refetch]
   );
 
   const value = useMemo<AuthContextValue>(
