@@ -18,11 +18,13 @@ function storageKey(userId: string) {
 
 /** Wishlist per pengguna, disimpan lokal sampai backend siap (ISSUE-15). */
 export function WishlistProvider({children}: {children: ReactNode}) {
-  const {user, isHydrated: authHydrated} = useAuth();
+  const {user, isPending: authIsPending} = useAuth();
   const [productIds, setProductIds] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!authHydrated) return;
+    // Masih menunggu sesi dari server — jangan baca/tulis dulu supaya tidak
+    // menimpa wishlist dengan state kosong.
+    if (authIsPending) return;
     queueMicrotask(() => {
       if (!user) {
         setProductIds([]);
@@ -35,12 +37,12 @@ export function WishlistProvider({children}: {children: ReactNode}) {
         setProductIds([]);
       }
     });
-  }, [user, authHydrated]);
+  }, [user, authIsPending]);
 
   useEffect(() => {
-    if (!authHydrated || !user) return;
+    if (authIsPending || !user) return;
     window.localStorage.setItem(storageKey(user.id), JSON.stringify(productIds));
-  }, [productIds, user, authHydrated]);
+  }, [productIds, user, authIsPending]);
 
   const isSaved = useCallback(
     (productId: string) => productIds.includes(productId),
