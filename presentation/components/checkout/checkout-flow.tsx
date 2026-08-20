@@ -19,9 +19,6 @@ import {WhatsAppPaymentGateway} from "@/infrastructure/payment/whatsapp-payment-
 import {useCart} from "@/presentation/providers/cart-provider";
 import {useUi} from "@/presentation/providers/ui-provider";
 
-// TODO(ISSUE-14): ganti dengan AuthProvider (status login sungguhan).
-const TEMP_IS_LOGGED_IN = false;
-
 type Step = "details" | "review";
 
 // Field yang divalidasi sebelum boleh lanjut dari step "details" ke "review".
@@ -152,19 +149,9 @@ export function CheckoutFlow() {
         <span className={step === "review" ? "text-ink" : undefined}>Review</span>
       </nav>
 
-      {!TEMP_IS_LOGGED_IN ? (
-        <div className="mt-8 border border-hairline bg-warm p-6">
-          <p className="text-sm">Save this to your account</p>
-          <ul className="mt-2 space-y-1 text-xs text-muted">
-            <li>Track your delivery in real time</li>
-            <li>View and repeat past purchases</li>
-            <li>Save pieces to your wishlist</li>
-          </ul>
-          <TextLink onClick={() => openOverlay("account")} className="mt-3 inline-block">
-            Create Account or Sign In →
-          </TextLink>
-        </div>
-      ) : null}
+      {/* Banner "Save this to your account" untuk tamu dihapus di ISSUE-17:
+          halaman /checkout sekarang dibungkus <RequireAuth>, jadi
+          CheckoutFlow tidak pernah dirender untuk tamu lagi. */}
 
       <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_400px]">
         {/* Order Summary tampil duluan di mobile (di atas form) supaya

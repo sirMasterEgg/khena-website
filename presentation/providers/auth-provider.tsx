@@ -1,93 +1,75 @@
 "use client";
 
-import {createContext, useCallback, useContext, useEffect, useState} from "react";
+import {createContext, useCallback, useContext, useMemo} from "react";
 import type {ReactNode} from "react";
+import {authClient, type AuthUser} from "@/infrastructure/auth/auth-client";
+import {authErrorMessage} from "@/infrastructure/auth/error-messages";
 
-export type AuthUser = {
-  id: string;
-  name: string;
-  email: string;
-};
+export type {AuthUser};
 
-export type SignInError = "invalid-login" | "email-not-confirmed";
-
-type SignInResult = {ok: true} | {ok: false; error: SignInError};
-type RegisterResult = {ok: true} | {ok: false; error: string};
+type Result = {ok: true} | {ok: false; message: string};
 
 type AuthContextValue = {
   user: AuthUser | null;
-  isHydrated: boolean;
-  signIn: (email: string, password: string) => Promise<SignInResult>;
-  register: (name: string, email: string, password: string) => Promise<RegisterResult>;
-  signOut: () => void;
+  /** true selama sesi masih diambil dari server — render UI netral dulu. */
+  isPending: boolean;
+  signIn: (email: string, password: string) => Promise<Result>;
+  signUp: (input: {name: string; email: string; password: string; phone: string}) => Promise<Result>;
+  signOut: () => Promise<void>;
+  updateProfile: (input: {name?: string; phone?: string}) => Promise<Result>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const STORAGE_KEY = "khena.auth-user";
 
-// TODO(ISSUE-15): ganti dengan panggilan API auth sungguhan.
-// "demo@khena.co.id" / "khena123" sudah terverifikasi, untuk uji alur sign in.
-const MOCK_ACCOUNTS: {email: string; password: string; name: string; confirmed: boolean}[] = [
-  {email: "demo@khena.co.id", password: "khena123", name: "Demo User", confirmed: true},
-];
-
+/**
+ * Sesi dibaca dari satu sumber kebenaran: `authClient.useSession()`. Provider
+ * ini hanya pembungkus tipis di atasnya — tidak ada state atau localStorage
+ * sendiri untuk sesi (bagian 3 keputusan #3 issue.md).
+ */
 export function AuthProvider({children}: {children: ReactNode}) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const {data, isPending, refetch} = authClient.useSession();
+  const user = data?.user ?? null;
 
-  // Baca sesi dari localStorage setelah mount supaya tidak ada hydration mismatch.
-  useEffect(() => {
-    queueMicrotask(() => {
-      try {
-        const raw = window.localStorage.getItem(STORAGE_KEY);
-        if (raw) setUser(JSON.parse(raw) as AuthUser);
-      } catch {
-        // localStorage tidak tersedia atau datanya korup — mulai tanpa sesi.
-      } finally {
-        setIsHydrated(true);
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!isHydrated) return;
-    if (user) {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    } else {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
-  }, [user, isHydrated]);
-
-  const signIn = useCallback(async (email: string, password: string): Promise<SignInResult> => {
-    const account = MOCK_ACCOUNTS.find((a) => a.email.toLowerCase() === email.toLowerCase());
-    if (!account || account.password !== password) {
-      return {ok: false, error: "invalid-login"};
-    }
-    if (!account.confirmed) {
-      return {ok: false, error: "email-not-confirmed"};
-    }
-    setUser({id: account.email, name: account.name, email: account.email});
+  const signIn = useCallback(async (email: string, password: string): Promise<Result> => {
+    const {error} = await authClient.signIn.email({email, password});
+    if (error) return {ok: false, message: authErrorMessage(error)};
     return {ok: true};
   }, []);
 
-  const register = useCallback(
-    async (name: string, email: string, password: string): Promise<RegisterResult> => {
-      if (MOCK_ACCOUNTS.some((a) => a.email.toLowerCase() === email.toLowerCase())) {
-        return {ok: false, error: "An account with this email already exists."};
-      }
-      MOCK_ACCOUNTS.push({email, password, name, confirmed: false});
+  const signUp = useCallback(
+    async (input: {name: string; email: string; password: string; phone: string}): Promise<Result> => {
+      const {error} = await authClient.signUp.email(input);
+      if (error) return {ok: false, message: authErrorMessage(error)};
       return {ok: true};
     },
     []
   );
 
-  const signOut = useCallback(() => setUser(null), []);
+  const signOut = useCallback(async () => {
+    // Sesi di-refetch otomatis oleh authClient setelah sign out — tidak ada
+    // state lokal yang perlu direset manual.
+    await authClient.signOut();
+  }, []);
 
-  return (
-    <AuthContext.Provider value={{user, isHydrated, signIn, register, signOut}}>
-      {children}
-    </AuthContext.Provider>
+  const updateProfile = useCallback(
+    async (input: {name?: string; phone?: string}): Promise<Result> => {
+      const {error} = await authClient.updateUser(input);
+      if (error) return {ok: false, message: authErrorMessage(error)};
+      // Klien better-auth biasanya memperbarui cache sesi sendiri, tapi
+      // di-refetch eksplisit sebagai jaring pengaman — bukan
+      // `window.location.reload()` (bagian Fase 6 issue.md).
+      refetch();
+      return {ok: true};
+    },
+    [refetch]
   );
+
+  const value = useMemo<AuthContextValue>(
+    () => ({user, isPending, signIn, signUp, signOut, updateProfile}),
+    [user, isPending, signIn, signUp, signOut, updateProfile]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
