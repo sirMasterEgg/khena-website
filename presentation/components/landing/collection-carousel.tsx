@@ -9,12 +9,14 @@ import {cn} from "@/presentation/lib/cn";
 import type {Collection} from "@/domain/entities/collection";
 
 export type CollectionCarouselProps = {
+  /** Judul section — dari `signatureCollection.title` CMS (issue #27), gantikan eyebrow hardcode lama. */
+  title: string;
   collections: Collection[];
   intervalMs: number;
 };
 
-/** Signature Collection Carousel — bagian 4.1 issue.md. */
-export function CollectionCarousel({collections, intervalMs}: CollectionCarouselProps) {
+/** Signature Collection Carousel — bagian 4.1 issue.md. Varian cadangan (issue #27), lihat landing-variants.ts. */
+export function CollectionCarousel({title, collections, intervalMs}: CollectionCarouselProps) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -42,7 +44,7 @@ export function CollectionCarousel({collections, intervalMs}: CollectionCarousel
       onMouseLeave={() => setPaused(false)}
     >
       <div className="mx-auto max-w-355 px-6 text-center">
-        <p className="text-eyebrow uppercase tracking-eyebrow text-muted">Signature Collection</p>
+        <p className="text-eyebrow uppercase tracking-eyebrow text-muted">{title}</p>
         <h2 className="mt-2 font-display text-h3 transition-opacity duration-500 ease-brand">
           {active.name}
         </h2>

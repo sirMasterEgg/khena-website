@@ -1,15 +1,16 @@
 "use client";
 
 import {useEffect, useRef, useState} from "react";
-import {PlaceholderImage} from "@/presentation/components/ui/placeholder-image";
+import {RemoteImage} from "@/presentation/components/ui/remote-image";
 import {Button} from "@/presentation/components/ui/button";
 import {SplitHeadline} from "@/presentation/components/motion/split-headline";
+import type {HeroContent} from "@/domain/entities/landing-content";
 
 const BUTTON_DELAY_MS = 600;
 const PARALLAX_FACTOR = 0.22;
 
-/** Hero landing 700px — bagian 4.1 issue.md. */
-export function HeroSection() {
+/** Hero landing 700px — bagian 4.1 issue.md, konten dari CMS (issue #27). */
+export function HeroSection({content}: {content: HeroContent}) {
   const parallaxRef = useRef<HTMLDivElement>(null);
   const [showButton, setShowButton] = useState(false);
 
@@ -43,24 +44,24 @@ export function HeroSection() {
     <section className="relative h-175 overflow-hidden">
       <div ref={parallaxRef} className="absolute inset-0">
         <div className="absolute inset-0 animate-ken-burns">
-          <PlaceholderImage className="h-full w-full" />
+          <RemoteImage src={content.image.url} alt={content.image.alt} priority />
         </div>
       </div>
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/40" />
 
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-invert">
-        <p className="text-eyebrow uppercase tracking-eyebrow">Spring / Summer 2026</p>
+        <p className="text-eyebrow uppercase tracking-eyebrow">{content.eyebrow}</p>
         <h1 className="mt-6 font-display text-hero">
-          <SplitHeadline text="Timeless Living" />
+          <SplitHeadline text={content.headline} />
         </h1>
         <div
           className={`mt-10 transition-opacity duration-700 ease-brand ${
             showButton ? "opacity-100" : "opacity-0"
           }`}
         >
-          <Button href="/collections" variant="light">
-            Discover Collection
+          <Button href={content.ctaHref} variant="light">
+            {content.ctaLabel}
           </Button>
         </div>
       </div>
