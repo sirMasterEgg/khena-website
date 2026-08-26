@@ -15,6 +15,7 @@ export function ProductHeroBanner({content}: {content: HeroContent}) {
           src={content.image.url}
           alt={content.image.alt}
           className="absolute inset-0"
+          sizes="100vw"
         />
         <div className="absolute inset-0 bg-ink/35" />
         <div className="relative z-10 max-w-190 px-6 text-center text-invert">

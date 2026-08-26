@@ -38,7 +38,12 @@ export function MaterialsCarousel({content}: {content: CraftmanshipContent}) {
                 i === index ? "opacity-100" : "opacity-0"
               )}
             >
-              <RemoteImage src={slide.image} alt={slide.title} label={slide.title} />
+              <RemoteImage
+                src={slide.image}
+                alt={slide.title}
+                label={slide.title}
+                sizes="(min-width: 1024px) 50vw, 100vw"
+              />
             </div>
           ))}
         </div>

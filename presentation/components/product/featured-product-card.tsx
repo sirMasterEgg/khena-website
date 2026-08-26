@@ -26,6 +26,7 @@ export function FeaturedProductCard({product, className}: FeaturedProductCardPro
             alt={product.name}
             label={product.name}
             className="transition-transform duration-1400 ease-brand group-hover:scale-105"
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
           />
         </div>
 

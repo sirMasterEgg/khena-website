@@ -44,7 +44,7 @@ export function HeroSection({content}: {content: HeroContent}) {
     <section className="relative h-175 overflow-hidden">
       <div ref={parallaxRef} className="absolute inset-0">
         <div className="absolute inset-0 animate-ken-burns">
-          <RemoteImage src={content.image.url} alt={content.image.alt} priority />
+          <RemoteImage src={content.image.url} alt={content.image.alt} sizes="100vw" priority />
         </div>
       </div>
 

@@ -17,7 +17,7 @@ export function SignatureCollectionBlock({content}: {content: SignatureCollectio
 
       <div className="mx-auto mt-8 max-w-355 px-6">
         <div className="relative aspect-[1114/468] overflow-hidden">
-          <RemoteImage src={content.image.url} alt={content.image.alt} label={content.title} />
+          <RemoteImage src={content.image.url} alt={content.image.alt} label={content.title} sizes="100vw" />
         </div>
       </div>
     </section>
