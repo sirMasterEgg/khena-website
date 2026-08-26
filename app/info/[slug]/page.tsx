@@ -1,6 +1,7 @@
 import type {Metadata} from "next";
 import {notFound} from "next/navigation";
 import {getOpenJobs} from "@/application/use-cases/get-open-jobs";
+import {getAssemblyManuals, getContractProjects, getQaItems} from "@/application/use-cases/get-info-content";
 import {
   STATIC_INFO_PAGES,
   STATIC_INFO_SLUGS,
@@ -12,18 +13,41 @@ import {CarePage} from "@/presentation/components/info/care-page";
 import {CareerPage} from "@/presentation/components/info/career-page";
 import {AssemblyPage} from "@/presentation/components/info/assembly-page";
 import {CataloguePage} from "@/presentation/components/info/catalogue-page";
+import {QaInfoPage} from "@/presentation/components/info/qa-info-page";
+import {ContractPage} from "@/presentation/components/info/contract-page";
+import {RETURNS_HEADER, SHIPPING_HEADER} from "@/presentation/lib/info-fallback";
 
-const INTERACTIVE_SLUGS = ["faq", "care", "career", "assembly", "catalogue"] as const;
+/** faq/care/shipping/returns/assembly/contract kini dari CMS (issue #27). */
+const DYNAMIC_SLUGS = ["faq", "care", "shipping", "returns", "assembly", "contract"] as const;
+type DynamicSlug = (typeof DYNAMIC_SLUGS)[number];
+
+const INTERACTIVE_SLUGS = ["career", "catalogue"] as const;
 type InteractiveSlug = (typeof INTERACTIVE_SLUGS)[number];
 
-const ALL_SLUGS: string[] = [...STATIC_INFO_SLUGS, ...INTERACTIVE_SLUGS];
+type NonStaticSlug = DynamicSlug | InteractiveSlug;
+
+const ALL_SLUGS: string[] = [...STATIC_INFO_SLUGS, ...DYNAMIC_SLUGS, ...INTERACTIVE_SLUGS];
+
+// faq/care/shipping/returns/assembly/contract sekarang dinamis (data CMS) —
+// revalidate lewat ISR, bukan lagi murni statis. Baca
+// 02-guides/incremental-static-regeneration.md sebelum mengubah nilai ini
+// (bagian Fase 7 issue #27).
+export const revalidate = 300;
 
 function isStaticSlug(slug: string): slug is StaticInfoPageSlug {
   return (STATIC_INFO_SLUGS as string[]).includes(slug);
 }
 
+function isDynamicSlug(slug: string): slug is DynamicSlug {
+  return (DYNAMIC_SLUGS as readonly string[]).includes(slug);
+}
+
 function isInteractiveSlug(slug: string): slug is InteractiveSlug {
   return (INTERACTIVE_SLUGS as readonly string[]).includes(slug);
+}
+
+function isNonStaticSlug(slug: string): slug is NonStaticSlug {
+  return isDynamicSlug(slug) || isInteractiveSlug(slug);
 }
 
 export function generateStaticParams() {
@@ -43,7 +67,7 @@ export async function generateMetadata({params}: InfoPageProps): Promise<Metadat
   return {};
 }
 
-/** Router untuk 10 halaman /info/[slug] — bagian 4.9 issue.md. */
+/** Router untuk halaman /info/[slug] — bagian 4.9 issue.md + issue #27. */
 export default async function InfoPage({params}: InfoPageProps) {
   const {slug} = await params;
 
@@ -51,22 +75,42 @@ export default async function InfoPage({params}: InfoPageProps) {
     return <StaticInfoPageView page={STATIC_INFO_PAGES[slug]} />;
   }
 
-  if (!isInteractiveSlug(slug)) {
+  if (!isNonStaticSlug(slug)) {
     notFound();
   }
 
   switch (slug) {
-    case "faq":
-      return <FaqPage />;
-    case "care":
-      return <CarePage />;
+    case "faq": {
+      const items = await getQaItems("faq");
+      return <FaqPage items={items} />;
+    }
+    case "care": {
+      const items = await getQaItems("care");
+      return <CarePage items={items} />;
+    }
+    case "shipping": {
+      const items = await getQaItems("shipping");
+      return <QaInfoPage {...SHIPPING_HEADER} items={items} />;
+    }
+    case "returns": {
+      const items = await getQaItems("returns");
+      return <QaInfoPage {...RETURNS_HEADER} items={items} />;
+    }
+    case "assembly": {
+      const manuals = await getAssemblyManuals();
+      return <AssemblyPage manuals={manuals} />;
+    }
+    case "contract": {
+      const projects = await getContractProjects();
+      return <ContractPage projects={projects} />;
+    }
     case "career": {
       const jobs = await getOpenJobs();
       return <CareerPage jobs={jobs} />;
     }
-    case "assembly":
-      return <AssemblyPage />;
     case "catalogue":
       return <CataloguePage />;
+    default:
+      notFound();
   }
 }
