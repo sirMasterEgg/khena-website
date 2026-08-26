@@ -36,10 +36,13 @@ export const apiClient: AxiosInstance = axios.create({
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<{ message?: string }>) => {
+  (error: AxiosError<{ error?: { message?: string; code?: string } }>) => {
     const status = error.response?.status;
-    const message =
-      error.response?.data?.message ?? error.message ?? "Unknown API error";
+    const data = error.response?.data;
+    // Backend membungkus error sebagai {"error": {"message": "..."}} (contract.md
+    // bagian 1) — bukan {"message": "..."} di root. Baca dari path yang benar,
+    // kalau tidak pesan asli tidak pernah terbaca (bug Fase 1 issue #27).
+    const message = data?.error?.message ?? error.message ?? "Unknown API error";
     return Promise.reject(
       new ApiError(`API error${status ? ` ${status}` : ""}: ${message}`, status)
     );
