@@ -5,6 +5,8 @@ export const API_ENDPOINTS = {
     list: "/pages",
   },
   products: {
+    // contract.md Bagian 33 — dipakai fitur search (query `search`).
+    list: "/products",
     detail: (id: string) => `/products/${id}`,
   },
   // Room type + kategori published, dua level sekaligus — contract.md Bagian 32.

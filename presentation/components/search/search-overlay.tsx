@@ -1,38 +1,52 @@
 "use client";
 
-import {useEffect, useMemo, useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import Link from "next/link";
+import {useQuery, keepPreviousData} from "@tanstack/react-query";
 import {Chip} from "@/presentation/components/ui/chip";
-import {PlaceholderImage} from "@/presentation/components/ui/placeholder-image";
+import {RemoteImage} from "@/presentation/components/ui/remote-image";
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
 import {useUi} from "@/presentation/providers/ui-provider";
-import type {Product} from "@/domain/entities/product";
+import {productSearchRepository} from "@/infrastructure/repositories/client";
+import {isProductSummaryOnSale, isProductSummarySoldOut} from "@/domain/entities/product-summary";
+import {formatIDR} from "@/presentation/lib/format";
 
 const POPULAR_TERMS = ["Sofa", "Lounge Chair", "Dining Table", "Solana Lounge Chair"];
-const MAX_RESULTS = 6;
 const AUTOFOCUS_DELAY_MS = 320;
+/** User berhenti mengetik selama ini sebelum request dikirim — bagian fitur search product. */
+const DEBOUNCE_MS = 300;
 
-export type SearchOverlayProps = {
-  products: Product[];
-  categoryNameBySlug: Record<string, string>;
-  collectionNameBySlug: Record<string, string>;
-};
-
-/** Sheet pencarian turun dari atas — bagian 3.5 issue.md. */
-export function SearchOverlay({
-  products,
-  categoryNameBySlug,
-  collectionNameBySlug,
-}: SearchOverlayProps) {
+/**
+ * Sheet pencarian turun dari atas — bagian 3.5 issue.md, disambungkan ke
+ * `GET /api/products?search=` (contract.md Bagian 33 — fitur search
+ * product). Sengaja tidak lagi menerima daftar produk lewat props seperti
+ * sebelumnya: pencarian-saat-mengetik adalah interaksi browser murni, jadi
+ * repository-nya dipanggil langsung dari sini lewat `apiClient`
+ * (`HttpProductSearchRepository`), bukan lewat props dari Server Component.
+ *
+ * `productSummary` (bentuk hasil API, lihat `domain/entities/product-summary.ts`)
+ * tidak membawa slug kategori/koleksi seperti entity `Product` mock — jadi
+ * subtitle di bawah nama produk sekarang menampilkan harga, bukan
+ * "Kategori · Koleksi" seperti versi mock.
+ *
+ * Konsekuensi yang diterima (sama pola dengan issue navbar #29 soal /shop):
+ * `/product/[id]` masih 100% mock, sedangkan id hasil pencarian ini adalah
+ * UUID asli dari backend — klik hasil pencarian kemungkinan besar mengarah
+ * ke halaman produk kosong sampai `/product/[id]` ikut dimigrasikan di issue
+ * terpisah.
+ */
+export function SearchOverlay() {
   const {isOpen, close} = useUi();
   const open = isOpen("search");
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleClose() {
     close();
     setQuery("");
+    setDebouncedQuery("");
   }
 
   useEffect(() => {
@@ -45,34 +59,37 @@ export function SearchOverlay({
     if (!open) return;
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        close();
-        setQuery("");
-      }
+      if (event.key === "Escape") handleClose();
     }
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, close]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
+  // Debounce: request baru hanya dikirim 300ms setelah user berhenti
+  // mengetik, supaya tidak ada satu request per keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [query]);
 
-    return products
-      .filter((product) => {
-        const categoryName = categoryNameBySlug[product.category] ?? product.category;
-        const collectionName = collectionNameBySlug[product.collection] ?? product.collection;
-        return (
-          product.name.toLowerCase().includes(q) ||
-          categoryName.toLowerCase().includes(q) ||
-          collectionName.toLowerCase().includes(q)
-        );
-      })
-      .slice(0, MAX_RESULTS);
-  }, [query, products, categoryNameBySlug, collectionNameBySlug]);
+  const {
+    data: results,
+    isFetching,
+    isError,
+  } = useQuery({
+    queryKey: ["product-search", debouncedQuery],
+    queryFn: ({signal}) => productSearchRepository.search(debouncedQuery, signal),
+    enabled: debouncedQuery !== "",
+    // Tetap tampilkan hasil lama saat mengetik lanjutan supaya list tidak
+    // berkedip kosong sebelum jawaban baru datang.
+    placeholderData: keepPreviousData,
+  });
 
   if (!open) return null;
+
+  const hasQuery = debouncedQuery !== "";
 
   return (
     <div className="fixed inset-0 z-60">
@@ -106,7 +123,7 @@ export function SearchOverlay({
           </div>
 
           <div className="mt-8">
-            {query.trim() === "" ? (
+            {!hasQuery ? (
               <div className="flex flex-wrap items-baseline gap-6">
                 {/* `items-baseline` (bukan `items-center`) supaya teks "Popular"
                     sejajar dengan teks Chip — Chip punya `pb-1 border-b-2`
@@ -119,9 +136,9 @@ export function SearchOverlay({
                   </Chip>
                 ))}
               </div>
-            ) : results.length === 0 ? (
-              <p className="text-sm text-muted">No pieces match &ldquo;{query}&rdquo;.</p>
-            ) : (
+            ) : isError ? (
+              <p className="text-sm text-muted">Search is unavailable right now. Try again shortly.</p>
+            ) : results && results.length > 0 ? (
               <ul className="divide-y divide-hairline">
                 {results.map((product) => (
                   <li key={product.id}>
@@ -130,20 +147,32 @@ export function SearchOverlay({
                       onClick={handleClose}
                       className="flex items-center gap-4 py-4"
                     >
-                      <div className="size-16 shrink-0">
-                        <PlaceholderImage label={product.name} />
+                      <div className="relative size-16 shrink-0 overflow-hidden">
+                        <RemoteImage src={product.image} alt={product.name} label={product.name} />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="text-sm">{product.name}</p>
                         <p className="text-xs text-muted">
-                          {categoryNameBySlug[product.category] ?? product.category} ·{" "}
-                          {collectionNameBySlug[product.collection] ?? product.collection}
+                          {isProductSummarySoldOut(product) ? (
+                            "Sold Out"
+                          ) : isProductSummaryOnSale(product) ? (
+                            <>
+                              <span className="text-accent">{formatIDR(product.priceAfterDiscount)}</span>{" "}
+                              <span className="line-through">{formatIDR(product.price)}</span>
+                            </>
+                          ) : (
+                            formatIDR(product.price)
+                          )}
                         </p>
                       </div>
                     </Link>
                   </li>
                 ))}
               </ul>
+            ) : isFetching ? (
+              <p className="text-sm text-muted">Searching…</p>
+            ) : (
+              <p className="text-sm text-muted">No pieces match &ldquo;{debouncedQuery}&rdquo;.</p>
             )}
           </div>
         </div>
