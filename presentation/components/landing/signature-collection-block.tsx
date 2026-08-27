@@ -7,12 +7,17 @@ import type {SignatureCollectionContent} from "@/domain/entities/landing-content
  * visual mengikuti `CollectionCarousel` supaya ritme halaman tidak berubah.
  * Tanpa panah/dot/auto-play/link — struktur CMS section ini tidak menyediakan
  * slug tujuan (lihat Pertanyaan Terbuka #1 di issue.md).
+ *
+ * Eyebrow "Signature Collection" tetap hardcode (permintaan langsung, bukan
+ * dari CMS) — struktur section ini tidak punya field eyebrow, `content.title`
+ * dipakai sebagai judul di bawahnya.
  */
 export function SignatureCollectionBlock({content}: {content: SignatureCollectionContent}) {
   return (
     <section className="pt-27.5">
       <div className="mx-auto max-w-355 px-6 text-center">
-        <h2 className="font-display text-h3">{content.title}</h2>
+        <p className="text-eyebrow uppercase tracking-eyebrow text-muted">Signature Collection</p>
+        <h2 className="mt-2 font-display text-h3">{content.title}</h2>
       </div>
 
       <div className="mx-auto mt-8 max-w-355 px-6">
