@@ -4,26 +4,27 @@ import {useMemo, useState} from "react";
 import {InfoHero} from "@/presentation/components/info/info-hero";
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
-import {useToast} from "@/presentation/providers/toast-provider";
-import {ASSEMBLY_MANUALS} from "@/infrastructure/mock/data/info-pages";
+import {ASSEMBLY_HEADER} from "@/presentation/lib/info-fallback";
+import type {AssemblyManual} from "@/domain/entities/info-content";
 
-/** Halaman /info/assembly — search-first, bagian 4.9 issue.md. */
-export function AssemblyPage() {
+/** Halaman /info/assembly — search-first, bagian 4.9 issue.md + issue #27. */
+export function AssemblyPage({manuals}: {manuals: AssemblyManual[]}) {
   const [query, setQuery] = useState("");
-  const {toast} = useToast();
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return ASSEMBLY_MANUALS;
-    return ASSEMBLY_MANUALS.filter(
+    if (!q) return manuals;
+    return manuals.filter(
       (manual) =>
-        manual.productName.toLowerCase().includes(q) || manual.sku.toLowerCase().includes(q)
+        manual.productName.toLowerCase().includes(q) ||
+        manual.productSku.toLowerCase().includes(q) ||
+        manual.fileName.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [manuals, query]);
 
   return (
     <>
-      <InfoHero eyebrow="Information" title="Assembly Manuals" />
+      <InfoHero eyebrow={ASSEMBLY_HEADER.eyebrow} title={ASSEMBLY_HEADER.title} />
 
       <div className="mx-auto w-full max-w-180 px-6 py-20 lg:py-30">
         <input
@@ -41,33 +42,27 @@ export function AssemblyPage() {
                 <Icon icon={ICONS.document} className="size-5 shrink-0 text-muted" />
                 <div>
                   <p className="text-sm">{manual.productName}</p>
-                  <p className="text-xs text-muted">{manual.fileName ?? manual.sku}</p>
+                  <p className="text-xs text-muted">
+                    {manual.fileName} · {manual.fileSize}
+                    {manual.productSku ? ` · ${manual.productSku}` : ""}
+                  </p>
                 </div>
               </div>
-              {manual.fileName ? (
-                // Belum ada aset PDF sungguhan — placeholder path (bagian 0.3.5 issue.md).
-                <a
-                  href={`/manuals/${manual.fileName}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="shrink-0 text-xs uppercase tracking-label transition-colors duration-300 ease-brand hover:text-accent"
-                >
-                  Open PDF
-                </a>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => toast(`${manual.productName} manual is not available yet`)}
-                  className="shrink-0 text-xs uppercase tracking-label text-faint"
-                >
-                  —
-                </button>
-              )}
+              <a
+                href={manual.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 text-xs uppercase tracking-label transition-colors duration-300 ease-brand hover:text-accent"
+              >
+                Open PDF
+              </a>
             </li>
           ))}
         </ul>
 
-        {results.length === 0 ? (
+        {manuals.length === 0 ? (
+          <p className="mt-10 text-center text-sm text-muted">No manuals available yet.</p>
+        ) : results.length === 0 ? (
           <p className="mt-10 text-center text-sm text-muted">No manuals match this search.</p>
         ) : null}
       </div>

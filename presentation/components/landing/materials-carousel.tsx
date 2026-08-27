@@ -1,45 +1,26 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {PlaceholderImage} from "@/presentation/components/ui/placeholder-image";
+import {RemoteImage} from "@/presentation/components/ui/remote-image";
 import {TextLink} from "@/presentation/components/ui/text-link";
 import {cn} from "@/presentation/lib/cn";
+import type {CraftmanshipContent} from "@/domain/entities/landing-content";
 
-const MATERIAL_SLIDES = [
-  {
-    title: "Our Materials",
-    body: "Every piece begins with material chosen for how it ages, not just how it looks on day one.",
-  },
-  {
-    title: "Solid Timber",
-    body: "Kiln-dried teak and oak, joined with traditional techniques built to outlast trends.",
-  },
-  {
-    title: "Hand-Loomed Textile",
-    body: "Woven by artisan partners using natural fibres, dyed in small, considered batches.",
-  },
-  {
-    title: "Natural Stone",
-    body: "Quarried stone surfaces, each with its own grain — no two pieces are ever identical.",
-  },
-] as const;
-
-const INTERVAL_MS = 5000;
-
-/** Materials Carousel — bagian 4.1 issue.md. */
-export function MaterialsCarousel() {
+/** Materials Carousel — bagian 4.1 issue.md, konten dari CMS (issue #27). */
+export function MaterialsCarousel({content}: {content: CraftmanshipContent}) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const {slides} = content;
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || slides.length <= 1) return;
     const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % MATERIAL_SLIDES.length);
-    }, INTERVAL_MS);
+      setIndex((prev) => (prev + 1) % slides.length);
+    }, content.intervalMs);
     return () => clearInterval(timer);
-  }, [paused]);
+  }, [paused, slides.length, content.intervalMs]);
 
-  const active = MATERIAL_SLIDES[index];
+  const active = slides[index];
 
   return (
     <section
@@ -49,21 +30,26 @@ export function MaterialsCarousel() {
     >
       <div className="mx-auto grid max-w-355 grid-cols-1 gap-12 px-6 lg:grid-cols-2 lg:items-center">
         <div className="relative aspect-square overflow-hidden">
-          {MATERIAL_SLIDES.map((slide, i) => (
+          {slides.map((slide, i) => (
             <div
-              key={slide.title}
+              key={i}
               className={cn(
                 "absolute inset-0 transition-opacity duration-700 ease-brand",
                 i === index ? "opacity-100" : "opacity-0"
               )}
             >
-              <PlaceholderImage label={slide.title} />
+              <RemoteImage
+                src={slide.image}
+                alt={slide.title}
+                label={slide.title}
+                sizes="(min-width: 1024px) 50vw, 100vw"
+              />
             </div>
           ))}
         </div>
 
         <div>
-          <p className="text-eyebrow uppercase tracking-eyebrow text-muted">Craftsmanship</p>
+          <p className="text-eyebrow uppercase tracking-eyebrow text-muted">{content.eyebrow}</p>
           <h2 className="mt-2 min-h-[2.2em] font-display text-h3 transition-opacity duration-500 ease-brand">
             {active.title}
           </h2>
@@ -71,7 +57,7 @@ export function MaterialsCarousel() {
             {active.body}
           </p>
           <div className="mt-6">
-            <TextLink href="/about">DISCOVER THE MATERIALS</TextLink>
+            <TextLink href={content.ctaHref}>{content.ctaLabel}</TextLink>
           </div>
         </div>
       </div>

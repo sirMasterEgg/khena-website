@@ -1,10 +1,15 @@
 import {Button} from "@/presentation/components/ui/button";
-import {ProductCard} from "@/presentation/components/product/product-card";
+import {FeaturedProductCard} from "@/presentation/components/product/featured-product-card";
 import {RevealStagger} from "@/presentation/components/motion/reveal-stagger";
-import type {Product} from "@/domain/entities/product";
+import type {FeaturedProduct} from "@/domain/entities/featured-product";
 
-/** "Designed for Life" — etalase, tanpa harga & quick-add (bagian 4.1 issue.md). */
-export function DesignedForLife({products}: {products: Product[]}) {
+/**
+ * "Designed for Life" — etalase, tanpa harga & quick-add (bagian 4.1
+ * issue.md). Judul & CTA belum ada di struktur CMS (`designedForLife` hanya
+ * punya `productIds`) — biarkan hardcode sampai dijawab (Pertanyaan Terbuka
+ * #2 issue #27).
+ */
+export function DesignedForLife({products}: {products: FeaturedProduct[]}) {
   if (products.length === 0) return null;
 
   return (
@@ -17,7 +22,7 @@ export function DesignedForLife({products}: {products: Product[]}) {
 
         <RevealStagger className="mt-12 grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} showPrice={false} showQuickAdd={false} />
+            <FeaturedProductCard key={product.id} product={product} />
           ))}
         </RevealStagger>
       </div>

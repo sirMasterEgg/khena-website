@@ -1,7 +1,10 @@
 export const API_ENDPOINTS = {
-  // Tambahkan endpoint sesuai kebutuhan, contoh:
-  // users: {
-  //   list: "/users",
-  //   detail: (id: string) => `/users/${id}`,
-  // },
+  pages: {
+    // BUKAN "/api/pages" — base URL sudah mengandung /api.
+    // BUKAN "/admin/pages" — itu endpoint dashboard admin.
+    list: "/pages",
+  },
+  products: {
+    detail: (id: string) => `/products/${id}`,
+  },
 } as const;
