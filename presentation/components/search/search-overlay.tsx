@@ -2,8 +2,7 @@
 
 import {useEffect, useRef, useState} from "react";
 import Link from "next/link";
-import {useQuery, keepPreviousData} from "@tanstack/react-query";
-import {Chip} from "@/presentation/components/ui/chip";
+import {keepPreviousData, useQuery} from "@tanstack/react-query";
 import {RemoteImage} from "@/presentation/components/ui/remote-image";
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
@@ -12,7 +11,6 @@ import {productSearchRepository} from "@/infrastructure/repositories/client";
 import {isProductSummaryOnSale, isProductSummarySoldOut} from "@/domain/entities/product-summary";
 import {formatIDR} from "@/presentation/lib/format";
 
-const POPULAR_TERMS = ["Sofa", "Lounge Chair", "Dining Table", "Solana Lounge Chair"];
 const AUTOFOCUS_DELAY_MS = 320;
 /** User berhenti mengetik selama ini sebelum request dikirim — bagian fitur search product. */
 const DEBOUNCE_MS = 300;
@@ -111,7 +109,7 @@ export function SearchOverlay() {
             <Icon icon={ICONS.search} className="size-5 text-muted" />
             <input
               ref={inputRef}
-              type="search"
+              type="text"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search pieces..."
@@ -123,20 +121,7 @@ export function SearchOverlay() {
           </div>
 
           <div className="mt-8">
-            {!hasQuery ? (
-              <div className="flex flex-wrap items-baseline gap-6">
-                {/* `items-baseline` (bukan `items-center`) supaya teks "Popular"
-                    sejajar dengan teks Chip — Chip punya `pb-1 border-b-2`
-                    ekstra di bawah yang bikin box-nya lebih tinggi, jadi
-                    `items-center` menggeser baseline teksnya. */}
-                <span className="text-xs uppercase tracking-label text-muted">Popular</span>
-                {POPULAR_TERMS.map((term) => (
-                  <Chip key={term} onClick={() => setQuery(term)}>
-                    {term}
-                  </Chip>
-                ))}
-              </div>
-            ) : isError ? (
+            {!hasQuery ? null : isError ? (
               <p className="text-sm text-muted">Search is unavailable right now. Try again shortly.</p>
             ) : results && results.length > 0 ? (
               <ul className="divide-y divide-hairline">
