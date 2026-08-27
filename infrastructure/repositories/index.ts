@@ -47,3 +47,9 @@ export const infoContentRepository: InfoContentRepository = new HttpInfoContentR
 // categoryRepository/collectionRepository di atas: /shop, /categories, /collections,
 // dan /product/[id] masih memakai mock dan akan dimigrasikan di issue terpisah.
 export const navigationRepository: NavigationRepository = new HttpNavigationRepository();
+
+// `productSearchRepository` (fitur search product) SENGAJA TIDAK ada di sini.
+// Berkas ini mengimpor http-navigation-repository.ts -> server-fetch.ts, yang
+// `import "server-only"` — mengimpor apa pun dari barrel ini di komponen
+// "use client" (search-overlay.tsx) menarik kode server-only itu ke bundle
+// browser dan build gagal. Lihat infrastructure/repositories/client.ts.
