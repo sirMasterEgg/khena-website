@@ -6,8 +6,7 @@ import Link from "next/link";
 import {cn} from "@/presentation/lib/cn";
 import {Container} from "@/presentation/components/ui/container";
 import {TextLink} from "@/presentation/components/ui/text-link";
-import type {Collection} from "@/domain/entities/collection";
-import type {ShopMenuGroup} from "@/presentation/components/layout/nav-data";
+import type {NavCollection, NavRoomGroup} from "@/domain/entities/navigation";
 
 const CLOSE_DELAY_MS = 160;
 
@@ -18,8 +17,8 @@ type SharedProps = {
 };
 
 export type MegaMenuProps =
-  | (SharedProps & {variant: "shop"; shopGroups: ShopMenuGroup[]})
-  | (SharedProps & {variant: "collection"; collections: Collection[]});
+  | (SharedProps & {variant: "shop"; shopGroups: NavRoomGroup[]})
+  | (SharedProps & {variant: "collection"; collections: NavCollection[]});
 
 /**
  * Trigger + dropdown untuk SHOP/COLLECTION di navbar — bagian 3.1 issue.md.
@@ -125,8 +124,8 @@ export function MegaMenu(props: MegaMenuProps) {
             {props.variant === "shop" ? (
               <div className="grid grid-cols-3 gap-10">
                 {props.shopGroups.map((group) => (
-                  <div key={group.room}>
-                    <p className="mb-4 text-xs uppercase tracking-label text-muted">{group.label}</p>
+                  <div key={group.slug}>
+                    <p className="mb-4 text-xs uppercase tracking-label text-muted">{group.name}</p>
                     <ul className="space-y-2">
                       {group.categories.map((category) => (
                         <li key={category.id}>

@@ -3,16 +3,16 @@
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {cn} from "@/presentation/lib/cn";
-import {NAV_LINKS, type ShopMenuGroup} from "@/presentation/components/layout/nav-data";
+import {NAV_LINKS} from "@/presentation/components/layout/nav-data";
 import {MegaMenu} from "@/presentation/components/layout/mega-menu";
-import type {Collection} from "@/domain/entities/collection";
+import type {NavCollection, NavRoomGroup} from "@/domain/entities/navigation";
 
 export function NavLinks({
   shopGroups,
   collections,
 }: {
-  shopGroups: ShopMenuGroup[];
-  collections: Collection[];
+  shopGroups: NavRoomGroup[];
+  collections: NavCollection[];
 }) {
   const pathname = usePathname();
 
@@ -21,7 +21,7 @@ export function NavLinks({
       {NAV_LINKS.map((link) => {
         const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
 
-        if (link.label === "SHOP") {
+        if (link.label === "SHOP" && shopGroups.length > 0) {
           return (
             <MegaMenu
               key={link.href}
@@ -34,7 +34,7 @@ export function NavLinks({
           );
         }
 
-        if (link.label === "COLLECTION") {
+        if (link.label === "COLLECTION" && collections.length > 0) {
           return (
             <MegaMenu
               key={link.href}

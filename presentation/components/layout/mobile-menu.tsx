@@ -9,17 +9,17 @@ import {TextLink} from "@/presentation/components/ui/text-link";
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
 import {cn} from "@/presentation/lib/cn";
-import {NAV_LINKS, type ShopMenuGroup} from "@/presentation/components/layout/nav-data";
+import {NAV_LINKS} from "@/presentation/components/layout/nav-data";
 import {useUi} from "@/presentation/providers/ui-provider";
-import type {Collection} from "@/domain/entities/collection";
+import type {NavCollection, NavRoomGroup} from "@/domain/entities/navigation";
 
 /** Overlay full-screen di bawah `lg:` (termasuk tablet) — bagian 3.1 issue.md. */
 export function MobileMenu({
   shopGroups,
   collections,
 }: {
-  shopGroups: ShopMenuGroup[];
-  collections: Collection[];
+  shopGroups: NavRoomGroup[];
+  collections: NavCollection[];
 }) {
   const {isOpen, close} = useUi();
   const open = isOpen("mobileMenu");
@@ -41,13 +41,13 @@ export function MobileMenu({
       </div>
       <nav className="flex flex-col px-6 py-10">
         {NAV_LINKS.map((link) => {
-          if (link.label === "SHOP") {
+          if (link.label === "SHOP" && shopGroups.length > 0) {
             return (
               <NavAccordion key={link.href} title={link.label}>
                 <div className="flex flex-col gap-6">
                   {shopGroups.map((group) => (
-                    <div key={group.room}>
-                      <p className="mb-3 text-xs uppercase tracking-label text-muted">{group.label}</p>
+                    <div key={group.slug}>
+                      <p className="mb-3 text-xs uppercase tracking-label text-muted">{group.name}</p>
                       <ul className="space-y-3">
                         {group.categories.map((category) => (
                           <li key={category.id}>
@@ -65,7 +65,7 @@ export function MobileMenu({
             );
           }
 
-          if (link.label === "COLLECTION") {
+          if (link.label === "COLLECTION" && collections.length > 0) {
             return (
               <NavAccordion key={link.href} title={link.label}>
                 <div className="flex flex-col gap-3">

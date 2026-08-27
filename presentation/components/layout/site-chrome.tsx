@@ -1,11 +1,11 @@
 import type {ReactNode} from "react";
+import {getNavigationMenu} from "@/application/use-cases/get-navigation-menu";
 import {getPublishedCategories} from "@/application/use-cases/get-published-categories";
 import {getVisibleCollections} from "@/application/use-cases/get-visible-collections";
 import {getLiveProducts} from "@/application/use-cases/get-live-products";
 import {Navbar} from "@/presentation/components/layout/navbar";
 import {Footer} from "@/presentation/components/layout/footer";
 import {GlobalOverlays} from "@/presentation/components/layout/global-overlays";
-import {buildShopMenuGroups} from "@/presentation/components/layout/nav-data";
 
 /**
  * Kerangka situs (navbar, footer, overlay global) dipasang sekali di root
@@ -13,24 +13,26 @@ import {buildShopMenuGroups} from "@/presentation/components/layout/nav-data";
  * diteruskan sebagai props ke Navbar & GlobalOverlays.
  */
 export async function SiteChrome({children}: {children: ReactNode}) {
-  const [categories, collections, products] = await Promise.all([
+  // `categories`, `collections`, dan `products` di bawah masih dari mock — dipakai
+  // SearchOverlay, yang belum dimigrasikan (di luar lingkup issue navbar).
+  const [navigation, categories, collections, products] = await Promise.all([
+    getNavigationMenu(),
     getPublishedCategories(),
     getVisibleCollections(),
     getLiveProducts(),
   ]);
 
-  const shopGroups = buildShopMenuGroups(categories, products);
-
   return (
     <>
-      <Navbar shopGroups={shopGroups} collections={collections} />
+      <Navbar shopGroups={navigation.shopGroups} collections={navigation.collections} />
       {children}
       <Footer />
       <GlobalOverlays
         products={products}
         categories={categories}
         collections={collections}
-        shopGroups={shopGroups}
+        shopGroups={navigation.shopGroups}
+        navCollections={navigation.collections}
       />
     </>
   );
