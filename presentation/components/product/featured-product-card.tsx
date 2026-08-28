@@ -18,7 +18,7 @@ export type FeaturedProductCardProps = {
  */
 export function FeaturedProductCard({product, className}: FeaturedProductCardProps) {
   return (
-    <Link href={`/product/${product.id}`} className={cn("block", className)}>
+    <Link href={`/product/${product.sku}`} className={cn("block", className)}>
       <Tile className="aspect-[383/384] bg-warm">
         <div className="absolute inset-10 flex items-center justify-center">
           <RemoteImage

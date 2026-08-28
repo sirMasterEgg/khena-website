@@ -1,37 +1,25 @@
 import type {ReactNode} from "react";
-import {getPublishedCategories} from "@/application/use-cases/get-published-categories";
-import {getVisibleCollections} from "@/application/use-cases/get-visible-collections";
-import {getLiveProducts} from "@/application/use-cases/get-live-products";
+import {getNavigationMenu} from "@/application/use-cases/get-navigation-menu";
 import {Navbar} from "@/presentation/components/layout/navbar";
 import {Footer} from "@/presentation/components/layout/footer";
 import {GlobalOverlays} from "@/presentation/components/layout/global-overlays";
-import {buildShopMenuGroups} from "@/presentation/components/layout/nav-data";
 
 /**
  * Kerangka situs (navbar, footer, overlay global) dipasang sekali di root
- * layout. Data kategori/koleksi/produk diambil satu kali di sini lalu
- * diteruskan sebagai props ke Navbar & GlobalOverlays.
+ * layout. Sebelum fitur search product, berkas ini juga mengambil
+ * categories/collections/products mock hanya untuk diteruskan ke
+ * `SearchOverlay`; sekarang `SearchOverlay` mengambil hasil pencariannya
+ * sendiri lewat API, jadi fetch itu dihapus dari sini.
  */
 export async function SiteChrome({children}: {children: ReactNode}) {
-  const [categories, collections, products] = await Promise.all([
-    getPublishedCategories(),
-    getVisibleCollections(),
-    getLiveProducts(),
-  ]);
-
-  const shopGroups = buildShopMenuGroups(categories, products);
+  const navigation = await getNavigationMenu();
 
   return (
     <>
-      <Navbar shopGroups={shopGroups} collections={collections} />
+      <Navbar shopGroups={navigation.shopGroups} collections={navigation.collections} />
       {children}
       <Footer />
-      <GlobalOverlays
-        products={products}
-        categories={categories}
-        collections={collections}
-        shopGroups={shopGroups}
-      />
+      <GlobalOverlays shopGroups={navigation.shopGroups} navCollections={navigation.collections} />
     </>
   );
 }

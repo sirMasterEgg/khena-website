@@ -8,6 +8,7 @@
 export type FeaturedProduct = {
   id: string;
   name: string;
+  sku: string;
   image?: string;
   soldOut: boolean;
 };

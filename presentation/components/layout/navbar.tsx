@@ -1,16 +1,15 @@
 import Link from "next/link";
 import {NavLinks} from "@/presentation/components/layout/nav-links";
 import {NavbarActions} from "@/presentation/components/layout/navbar-actions";
-import type {ShopMenuGroup} from "@/presentation/components/layout/nav-data";
-import type {Collection} from "@/domain/entities/collection";
+import type {NavCollection, NavRoomGroup} from "@/domain/entities/navigation";
 
 /** Navbar sticky 80px dengan mega dropdown — bagian 3.1 issue.md. */
 export function Navbar({
   shopGroups,
   collections,
 }: {
-  shopGroups: ShopMenuGroup[];
-  collections: Collection[];
+  shopGroups: NavRoomGroup[];
+  collections: NavCollection[];
 }) {
   return (
     <header className="sticky top-0 z-60 border-b border-ink bg-cream">

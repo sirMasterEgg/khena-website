@@ -14,6 +14,7 @@ export const productVariantSchema = z.object({
 export const productDetailSchema = z.object({
   id: z.string(),
   name: z.string(),
+  sku: z.string(),
   media: z.array(z.string()).optional().default([]),
   variants: z.array(productVariantSchema).optional().default([]),
 });

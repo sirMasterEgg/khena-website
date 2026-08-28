@@ -6,6 +6,7 @@ export function toFeaturedProduct(product: ProductDetail): FeaturedProduct {
   return {
     id: product.id,
     name: product.name,
+    sku: product.sku,
     image: firstVariant?.image ?? product.media[0] ?? undefined,
     soldOut: (firstVariant?.stock ?? 0) <= 0,
   };
