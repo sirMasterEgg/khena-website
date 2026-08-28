@@ -25,3 +25,14 @@ export const optionalImageObject = z
   .object({url: optionalImageUrl, alt: optionalText})
   .optional()
   .catch(undefined);
+
+/** Bentuk `meta` pada response list berpaginasi (contract.md Bagian 1). */
+export const pageMetaSchema = z
+  .object({
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    totalPages: z.number().int().nonnegative(),
+  })
+  // `meta` rusak/absen tidak boleh mematikan halaman — anggap satu halaman penuh.
+  .catch({page: 1, limit: 0, total: 0, totalPages: 1});

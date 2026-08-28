@@ -3,21 +3,21 @@
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import type {ChangeEvent} from "react";
 import {Chip} from "@/presentation/components/ui/chip";
-import {PRODUCT_SORT_OPTIONS, type ProductSortMode} from "@/domain/services/product-sort";
-import type {Category} from "@/domain/entities/category";
-import type {Collection} from "@/domain/entities/collection";
+import {SHOP_SORT_OPTIONS, type ShopSortMode} from "@/domain/services/product-sort";
+import type {CatalogCategory, CatalogCollection} from "@/domain/entities/catalog";
 
 export type ShopFilterBarProps = {
-  categories: Category[];
+  categories: CatalogCategory[];
   activeCategorySlug?: string;
-  activeCollection?: Collection;
-  sortMode: ProductSortMode;
+  activeCollection?: CatalogCollection;
+  sortMode: ShopSortMode;
 };
 
 /**
- * Filter kategori + sort untuk `/shop` — bagian 4.4 issue.md. Perubahan filter
- * selalu lewat `router.push()` ke query param baru, bukan `useState`, supaya
- * bisa di-bookmark dan di-share.
+ * Filter kategori + sort untuk `/shop` — bagian 4.4 issue.md, disambungkan ke
+ * katalog backend di issue #32. Perubahan filter selalu lewat `router.push()`
+ * ke query param baru, bukan `useState`, supaya bisa di-bookmark dan
+ * di-share.
  */
 export function ShopFilterBar({
   categories,
@@ -32,6 +32,10 @@ export function ShopFilterBar({
   function pushParams(mutate: (params: URLSearchParams) => void) {
     const next = new URLSearchParams(searchParams.toString());
     mutate(next);
+    // WAJIB: setiap perubahan filter/sort menghapus `page` — kalau tidak,
+    // user yang sedang di halaman 3 lalu mengganti filter akan mendarat di
+    // halaman 3 hasil baru yang kemungkinan besar kosong (Tahap 7.1 issue #32).
+    next.delete("page");
     const query = next.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   }
@@ -87,7 +91,7 @@ export function ShopFilterBar({
           onChange={handleSortChange}
           className="border-0 border-b border-ink bg-transparent py-1 text-ink outline-none"
         >
-          {PRODUCT_SORT_OPTIONS.map((option) => (
+          {SHOP_SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
