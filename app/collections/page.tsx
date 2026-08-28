@@ -1,9 +1,10 @@
 import type {Metadata} from "next";
-import {getVisibleCollections} from "@/application/use-cases/get-visible-collections";
-import {getLiveProducts} from "@/application/use-cases/get-live-products";
+import {getCollectionCatalog} from "@/application/use-cases/get-collection-catalog";
+import type {CollectionCatalogPage} from "@/domain/repositories/collection-catalog-repository";
 import {Container} from "@/presentation/components/ui/container";
 import {Eyebrow} from "@/presentation/components/ui/eyebrow";
 import {CollectionCard} from "@/presentation/components/product/collection-card";
+import {ShopPagination} from "@/presentation/components/shop/shop-pagination";
 import {RevealStagger} from "@/presentation/components/motion/reveal-stagger";
 
 export const metadata: Metadata = {
@@ -11,11 +12,28 @@ export const metadata: Metadata = {
   description: "Explore Khena's signature furniture collections.",
 };
 
-export default async function CollectionsPage() {
-  const [collections, liveProducts] = await Promise.all([
-    getVisibleCollections(),
-    getLiveProducts(),
-  ]);
+type CollectionsSearchParams = {[key: string]: string | string[] | undefined};
+
+/** `?page=abc` atau di luar jangkauan tidak boleh sampai ke backend sebagai string mentah — jatuh ke 1. */
+function parsePageParam(value: string | string[] | undefined): number {
+  const raw = typeof value === "string" ? Number(value) : NaN;
+  return Number.isInteger(raw) && raw >= 1 ? raw : 1;
+}
+
+export default async function CollectionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<CollectionsSearchParams>;
+}) {
+  const params = await searchParams;
+  const page = parsePageParam(params.page);
+
+  let catalog: CollectionCatalogPage | null = null;
+  try {
+    catalog = await getCollectionCatalog({page});
+  } catch (error) {
+    console.error("[collections] gagal memuat koleksi", error);
+  }
 
   return (
     <Container>
@@ -28,15 +46,25 @@ export default async function CollectionsPage() {
         </p>
       </div>
 
-      <RevealStagger className="grid grid-cols-1 gap-8 py-15 sm:grid-cols-2 lg:grid-cols-3 lg:py-30">
-        {collections.map((collection) => (
-          <CollectionCard
-            key={collection.id}
-            collection={collection}
-            pieceCount={liveProducts.filter((p) => p.collection === collection.slug).length}
-          />
-        ))}
-      </RevealStagger>
+      <div className="py-15 lg:py-30">
+        {catalog === null ? (
+          <p className="py-20 text-center text-sm text-muted">
+            Collections are unavailable right now. Please try again shortly.
+          </p>
+        ) : catalog.items.length === 0 ? (
+          <p className="py-20 text-center text-sm text-muted">No collections available yet.</p>
+        ) : (
+          <>
+            <RevealStagger className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {catalog.items.map((collection) => (
+                <CollectionCard key={collection.id} collection={collection} />
+              ))}
+            </RevealStagger>
+
+            <ShopPagination meta={catalog.meta} searchParams={params} pathname="/collections" />
+          </>
+        )}
+      </div>
     </Container>
   );
 }
