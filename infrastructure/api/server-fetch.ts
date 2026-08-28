@@ -27,13 +27,11 @@ function buildUrl(path: string, query?: ServerFetchOptions["query"]): string {
 type ErrorEnvelope = {error?: {code?: string; message?: string}};
 
 /**
- * Transport `fetch` untuk Server Component — dipakai konten CMS publik
- * (bukan endpoint bersesi, itu tetap lewat `apiClient` axios di client.ts).
- * Membuka envelope `{data: ...}` di sini, satu kali, supaya lapisan di atas
- * (repository, use case) tidak perlu tahu soal envelope — bagian Fase 1
- * issue #27.
+ * Bangun URL, panggil `fetch`, dan lempar `ApiRequestError` kalau gagal —
+ * dipakai bersama oleh `serverFetch` dan `serverFetchList` supaya logika
+ * error tidak disalin-tempel (Tahap 2 issue #32).
  */
-export async function serverFetch<T>(path: string, options?: ServerFetchOptions): Promise<T> {
+async function rawFetch(path: string, options?: ServerFetchOptions): Promise<unknown> {
   const url = buildUrl(path, options?.query);
   const revalidate = options?.revalidateSeconds ?? DEFAULT_REVALIDATE_SECONDS;
 
@@ -55,6 +53,31 @@ export async function serverFetch<T>(path: string, options?: ServerFetchOptions)
     throw new ApiRequestError(message, res.status, code);
   }
 
-  const json = (await res.json()) as {data: T};
+  return res.json();
+}
+
+/**
+ * Transport `fetch` untuk Server Component — dipakai konten CMS publik
+ * (bukan endpoint bersesi, itu tetap lewat `apiClient` axios di client.ts).
+ * Membuka envelope `{data: ...}` di sini, satu kali, supaya lapisan di atas
+ * (repository, use case) tidak perlu tahu soal envelope — bagian Fase 1
+ * issue #27.
+ */
+export async function serverFetch<T>(path: string, options?: ServerFetchOptions): Promise<T> {
+  const json = (await rawFetch(path, options)) as {data: T};
   return json.data;
+}
+
+export type ServerListResponse<T> = {data: T; meta: unknown};
+
+/**
+ * Sama seperti `serverFetch`, tapi ikut mengembalikan `meta` — dibutuhkan
+ * endpoint berpaginasi (`GET /api/products`, contract.md Bagian 33).
+ */
+export async function serverFetchList<T = unknown>(
+  path: string,
+  options?: ServerFetchOptions
+): Promise<ServerListResponse<T>> {
+  const json = (await rawFetch(path, options)) as {data: T; meta: unknown};
+  return {data: json.data, meta: json.meta};
 }

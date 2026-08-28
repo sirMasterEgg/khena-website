@@ -1,49 +1,59 @@
 import {Suspense} from "react";
-import {getLiveProducts} from "@/application/use-cases/get-live-products";
-import {getPublishedCategories} from "@/application/use-cases/get-published-categories";
-import {getVisibleCollections} from "@/application/use-cases/get-visible-collections";
-import {sortProducts, type ProductSortMode} from "@/domain/services/product-sort";
-import {ProductCard} from "@/presentation/components/product/product-card";
+import {getCatalogProducts} from "@/application/use-cases/get-catalog-products";
+import {getShopFilters} from "@/application/use-cases/get-shop-filters";
+import type {ProductCatalogPage} from "@/domain/repositories/product-catalog-repository";
+import {
+  parseShopSortMode,
+  sortSummariesSoldOutLast,
+  toCatalogSortQuery,
+} from "@/domain/services/product-sort";
+import {ProductSummaryCard} from "@/presentation/components/product/product-summary-card";
 import {ShopFilterBar} from "@/presentation/components/shop/shop-filter-bar";
+import {ShopPagination} from "@/presentation/components/shop/shop-pagination";
 import {Container} from "@/presentation/components/ui/container";
 import {TextLink} from "@/presentation/components/ui/text-link";
 import {PlaceholderImage} from "@/presentation/components/ui/placeholder-image";
 import {RevealStagger} from "@/presentation/components/motion/reveal-stagger";
 
-const SORT_MODES = new Set<ProductSortMode>(["featured", "name-asc", "price-asc", "price-desc"]);
+type ShopSearchParams = {[key: string]: string | string[] | undefined};
+
+/** `?page=abc` atau di luar jangkauan tidak boleh sampai ke backend sebagai string mentah — jatuh ke 1 (Tahap 9 issue #32). */
+function parsePageParam(value: string | string[] | undefined): number {
+  const raw = typeof value === "string" ? Number(value) : NaN;
+  return Number.isInteger(raw) && raw >= 1 ? raw : 1;
+}
 
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams: Promise<{[key: string]: string | string[] | undefined}>;
+  searchParams: Promise<ShopSearchParams>;
 }) {
   const params = await searchParams;
   const categorySlug = typeof params.category === "string" ? params.category : undefined;
   const collectionSlug = typeof params.collection === "string" ? params.collection : undefined;
-  const sortParam = typeof params.sort === "string" ? params.sort : "featured";
-  const sortMode: ProductSortMode = SORT_MODES.has(sortParam as ProductSortMode)
-    ? (sortParam as ProductSortMode)
-    : "featured";
+  const sortMode = parseShopSortMode(params.sort);
+  const page = parsePageParam(params.page);
 
-  const [liveProducts, categories, collections] = await Promise.all([
-    getLiveProducts(),
-    getPublishedCategories(),
-    getVisibleCollections(),
-  ]);
+  // Tidak pernah melempar — filter bar kosong lebih baik daripada /shop mati (D9).
+  const filters = await getShopFilters();
 
-  const filteredProducts = liveProducts.filter((product) => {
-    if (categorySlug && product.category !== categorySlug) return false;
-    if (collectionSlug && product.collection !== collectionSlug) return false;
-    return true;
-  });
-
-  const sortedProducts = sortProducts(filteredProducts, sortMode);
+  let catalog: ProductCatalogPage | null = null;
+  try {
+    catalog = await getCatalogProducts({
+      category: categorySlug,
+      collection: collectionSlug,
+      page,
+      ...toCatalogSortQuery(sortMode),
+    });
+  } catch (error) {
+    console.error("[shop] gagal memuat katalog", error);
+  }
 
   const activeCategory = categorySlug
-    ? categories.find((category) => category.slug === categorySlug)
+    ? filters.categories.find((category) => category.slug === categorySlug)
     : undefined;
   const activeCollection = collectionSlug
-    ? collections.find((collection) => collection.slug === collectionSlug)
+    ? filters.collections.find((collection) => collection.slug === collectionSlug)
     : undefined;
 
   const heroEyebrow = activeCollection
@@ -53,10 +63,7 @@ export default async function ShopPage({
       : "ALL PIECES";
   const heroTitle = activeCollection?.name ?? activeCategory?.name ?? "Every Piece";
 
-  const categoriesWithLiveProducts = new Set(liveProducts.map((product) => product.category));
-  const availableCategories = categories.filter((category) =>
-    categoriesWithLiveProducts.has(category.slug)
-  );
+  const sortedItems = catalog ? sortSummariesSoldOutLast(catalog.items) : [];
 
   return (
     <>
@@ -70,7 +77,7 @@ export default async function ShopPage({
 
       <Suspense>
         <ShopFilterBar
-          categories={availableCategories}
+          categories={filters.categories}
           activeCategorySlug={categorySlug}
           activeCollection={activeCollection}
           sortMode={sortMode}
@@ -78,19 +85,22 @@ export default async function ShopPage({
       </Suspense>
 
       <Container className="py-15 lg:py-30">
-        {sortedProducts.length === 0 ? (
+        {catalog === null ? (
+          <p className="py-20 text-center text-sm text-muted">
+            Catalogue is unavailable right now. Please try again shortly.
+          </p>
+        ) : sortedItems.length === 0 ? (
           <p className="py-20 text-center text-sm text-muted">No pieces match this filter.</p>
         ) : (
-          <RevealStagger className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3">
-            {sortedProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                showPrice={false}
-                showQuickAdd={false}
-              />
-            ))}
-          </RevealStagger>
+          <>
+            <RevealStagger className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3">
+              {sortedItems.map((product) => (
+                <ProductSummaryCard key={product.id} product={product} showPrice={false} />
+              ))}
+            </RevealStagger>
+
+            <ShopPagination meta={catalog.meta} searchParams={params} />
+          </>
         )}
 
         <div className="mt-15 text-center">
