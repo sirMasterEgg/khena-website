@@ -32,10 +32,8 @@ export function ShopFilterBar({
   function pushParams(mutate: (params: URLSearchParams) => void) {
     const next = new URLSearchParams(searchParams.toString());
     mutate(next);
-    // WAJIB: setiap perubahan filter/sort menghapus `page` — kalau tidak,
-    // user yang sedang di halaman 3 lalu mengganti filter akan mendarat di
-    // halaman 3 hasil baru yang kemungkinan besar kosong (Tahap 7.1 issue #32).
-    next.delete("page");
+    // Tidak perlu lagi menghapus `page` — /shop memakai infinite scroll
+    // (ShopProductGrid), jadi tidak ada param `page` di URL untuk dibersihkan.
     const query = next.toString();
     // `scroll: false` — router.push() scroll ke atas <html> secara default
     // (docs use-router.md, bagian "Disabling scroll to top"). Tanpa ini,

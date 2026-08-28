@@ -1,27 +1,22 @@
 import {Suspense} from "react";
 import {getCatalogProducts} from "@/application/use-cases/get-catalog-products";
 import {getShopFilters} from "@/application/use-cases/get-shop-filters";
-import type {ProductCatalogPage} from "@/domain/repositories/product-catalog-repository";
+import type {
+  ProductCatalogPage,
+  ProductCatalogQuery,
+} from "@/domain/repositories/product-catalog-repository";
 import {
   parseShopSortMode,
   sortSummariesSoldOutLast,
   toCatalogSortQuery,
 } from "@/domain/services/product-sort";
-import {ProductSummaryCard} from "@/presentation/components/product/product-summary-card";
 import {ShopFilterBar} from "@/presentation/components/shop/shop-filter-bar";
-import {ShopPagination} from "@/presentation/components/shop/shop-pagination";
+import {ShopProductGrid} from "@/presentation/components/shop/shop-product-grid";
 import {Container} from "@/presentation/components/ui/container";
 import {TextLink} from "@/presentation/components/ui/text-link";
 import {PlaceholderImage} from "@/presentation/components/ui/placeholder-image";
-import {RevealStagger} from "@/presentation/components/motion/reveal-stagger";
 
 type ShopSearchParams = {[key: string]: string | string[] | undefined};
-
-/** `?page=abc` atau di luar jangkauan tidak boleh sampai ke backend sebagai string mentah — jatuh ke 1 (Tahap 9 issue #32). */
-function parsePageParam(value: string | string[] | undefined): number {
-  const raw = typeof value === "string" ? Number(value) : NaN;
-  return Number.isInteger(raw) && raw >= 1 ? raw : 1;
-}
 
 export default async function ShopPage({
   searchParams,
@@ -32,19 +27,21 @@ export default async function ShopPage({
   const categorySlug = typeof params.category === "string" ? params.category : undefined;
   const collectionSlug = typeof params.collection === "string" ? params.collection : undefined;
   const sortMode = parseShopSortMode(params.sort);
-  const page = parsePageParam(params.page);
 
   // Tidak pernah melempar — filter bar kosong lebih baik daripada /shop mati (D9).
   const filters = await getShopFilters();
 
+  const catalogQuery: Omit<ProductCatalogQuery, "page"> = {
+    category: categorySlug,
+    collection: collectionSlug,
+    ...toCatalogSortQuery(sortMode),
+  };
+
   let catalog: ProductCatalogPage | null = null;
   try {
-    catalog = await getCatalogProducts({
-      category: categorySlug,
-      collection: collectionSlug,
-      page,
-      ...toCatalogSortQuery(sortMode),
-    });
+    // Infinite scroll: server hanya merender halaman pertama. Halaman
+    // berikutnya diambil di browser oleh ShopProductGrid, bukan lewat ?page=.
+    catalog = await getCatalogProducts({...catalogQuery, page: 1});
   } catch (error) {
     console.error("[shop] gagal memuat katalog", error);
   }
@@ -62,8 +59,6 @@ export default async function ShopPage({
       ? activeCategory.name.toUpperCase()
       : "ALL PIECES";
   const heroTitle = activeCollection?.name ?? activeCategory?.name ?? "Every Piece";
-
-  const sortedItems = catalog ? sortSummariesSoldOutLast(catalog.items) : [];
 
   return (
     <>
@@ -89,18 +84,18 @@ export default async function ShopPage({
           <p className="py-20 text-center text-sm text-muted">
             Catalogue is unavailable right now. Please try again shortly.
           </p>
-        ) : sortedItems.length === 0 ? (
+        ) : catalog.items.length === 0 ? (
           <p className="py-20 text-center text-sm text-muted">No pieces match this filter.</p>
         ) : (
-          <>
-            <RevealStagger className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3">
-              {sortedItems.map((product) => (
-                <ProductSummaryCard key={product.id} product={product} showPrice={false} />
-              ))}
-            </RevealStagger>
-
-            <ShopPagination meta={catalog.meta} searchParams={params} />
-          </>
+          // `key` memaksa remount tiap kali filter/sort berubah, supaya state
+          // infinite scroll di ShopProductGrid (items yang sudah termuat, meta
+          // halaman) tidak pernah tercampur antara query lama dan baru.
+          <ShopProductGrid
+            key={JSON.stringify(catalogQuery)}
+            initialItems={sortSummariesSoldOutLast(catalog.items)}
+            initialMeta={catalog.meta}
+            query={catalogQuery}
+          />
         )}
 
         <div className="mt-15 text-center">
