@@ -37,7 +37,11 @@ export function ShopFilterBar({
     // halaman 3 hasil baru yang kemungkinan besar kosong (Tahap 7.1 issue #32).
     next.delete("page");
     const query = next.toString();
-    router.push(query ? `${pathname}?${query}` : pathname);
+    // `scroll: false` — router.push() scroll ke atas <html> secara default
+    // (docs use-router.md, bagian "Disabling scroll to top"). Tanpa ini,
+    // tiap ganti kategori/sort melempar user ke atas hero, menjauhkannya
+    // dari filter bar yang baru saja dia sentuh.
+    router.push(query ? `${pathname}?${query}` : pathname, {scroll: false});
   }
 
   function handleCategoryClick(slug: string) {
