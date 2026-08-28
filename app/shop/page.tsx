@@ -1,6 +1,7 @@
 import {Suspense} from "react";
 import {getCatalogProducts} from "@/application/use-cases/get-catalog-products";
 import {getShopFilters} from "@/application/use-cases/get-shop-filters";
+import {getCollectionCatalog} from "@/application/use-cases/get-collection-catalog";
 import type {ProductCatalogPage} from "@/domain/repositories/product-catalog-repository";
 import {
   parseShopSortMode,
@@ -12,7 +13,7 @@ import {ShopFilterBar} from "@/presentation/components/shop/shop-filter-bar";
 import {ShopPagination} from "@/presentation/components/shop/shop-pagination";
 import {Container} from "@/presentation/components/ui/container";
 import {TextLink} from "@/presentation/components/ui/text-link";
-import {PlaceholderImage} from "@/presentation/components/ui/placeholder-image";
+import {RemoteImage} from "@/presentation/components/ui/remote-image";
 import {RevealStagger} from "@/presentation/components/motion/reveal-stagger";
 
 type ShopSearchParams = {[key: string]: string | string[] | undefined};
@@ -56,6 +57,22 @@ export default async function ShopPage({
     ? filters.collections.find((collection) => collection.slug === collectionSlug)
     : undefined;
 
+  // `CatalogCollection` (filter bar) sengaja cuma punya id/slug/name (D6, issue
+  // #34) — heroImage diambil ulang lewat collectionCatalogRepository khusus
+  // untuk background hero. Tidak pernah melempar: hero tanpa gambar jatuh ke
+  // PlaceholderImage lewat RemoteImage, bukan mematikan /shop.
+  let collectionHeroImage: string | undefined;
+  if (collectionSlug) {
+    try {
+      const collections = await getCollectionCatalog({limit: 48});
+      collectionHeroImage = collections.items.find(
+        (item) => item.slug === collectionSlug
+      )?.heroImage;
+    } catch (error) {
+      console.error("[shop] gagal memuat heroImage koleksi", error);
+    }
+  }
+
   const heroEyebrow = activeCollection
     ? "COLLECTION"
     : activeCategory
@@ -68,7 +85,13 @@ export default async function ShopPage({
   return (
     <>
       <div className="relative flex h-90 items-center justify-center overflow-hidden">
-        <PlaceholderImage className="absolute inset-0 brightness-55" />
+        <RemoteImage
+          src={collectionHeroImage}
+          alt={heroTitle}
+          className="absolute inset-0 brightness-55"
+          sizes="100vw"
+          priority
+        />
         <div className="relative z-10 text-center text-invert">
           <p className="text-eyebrow uppercase tracking-eyebrow">{heroEyebrow}</p>
           <h1 className="mt-4 font-display text-h2">{heroTitle}</h1>
