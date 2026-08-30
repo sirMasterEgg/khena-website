@@ -1,6 +1,6 @@
 import type {Metadata} from "next";
 import {notFound} from "next/navigation";
-import {getOpenJobs} from "@/application/use-cases/get-open-jobs";
+import {getOpenCareers} from "@/application/use-cases/get-open-careers";
 import {getAssemblyManuals, getContractProjects, getQaItems} from "@/application/use-cases/get-info-content";
 import {
   STATIC_INFO_PAGES,
@@ -105,8 +105,17 @@ export default async function InfoPage({params}: InfoPageProps) {
       return <ContractPage projects={projects} />;
     }
     case "career": {
-      const jobs = await getOpenJobs();
-      return <CareerPage jobs={jobs} />;
+      // Sengaja ditangkap di sini, bukan di use case: halaman yang tahu cara
+      // menampilkan kegagalan tanpa mematikan seluruh /info/[slug] (D8).
+      // JSX tidak dikonstruksi di dalam try/catch (aturan react-hooks/error-boundaries)
+      // — sama seperti pola /collections & /shop.
+      let careers: Awaited<ReturnType<typeof getOpenCareers>>["items"] | null = null;
+      try {
+        careers = (await getOpenCareers()).items;
+      } catch (error) {
+        console.error("[career] gagal memuat lowongan", error);
+      }
+      return <CareerPage careers={careers ?? []} failed={careers === null} />;
     }
     case "catalogue":
       return <CataloguePage />;

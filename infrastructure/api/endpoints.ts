@@ -19,4 +19,13 @@ export const API_ENDPOINTS = {
   collections: {
     list: "/collections",
   },
+  // contract.md Bagian 37. BUKAN "/admin/jobs" (Bagian 26, endpoint dashboard
+  // admin dengan bentuk data berbeda) dan BUKAN "/api/careers" (base URL sudah
+  // mengandung /api).
+  careers: {
+    list: "/careers",
+    /** Menerima uuid ATAU slug. */
+    detail: (idOrSlug: string) => `/careers/${idOrSlug}`,
+    apply: "/careers/apply",
+  },
 } as const;

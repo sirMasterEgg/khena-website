@@ -9,8 +9,13 @@ import {FormField} from "@/presentation/components/ui/form-field";
 import {Button} from "@/presentation/components/ui/button";
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
-import {jobApplicationService} from "@/infrastructure/services";
-import type {Job} from "@/domain/entities/job";
+import {careerApplicationService} from "@/infrastructure/services/client";
+import {ApiError} from "@/infrastructure/api/client";
+import {
+  ALLOWED_ATTACHMENT_EXTENSIONS,
+  MAX_ATTACHMENT_BYTES,
+} from "@/domain/services/career-application-service";
+import type {CareerSummary} from "@/domain/entities/career";
 
 const applicationSchema = z.object({
   fullName: z.string().trim().min(1, "Full name is required"),
@@ -22,10 +27,19 @@ const applicationSchema = z.object({
 type ApplicationValues = z.infer<typeof applicationSchema>;
 
 export type CareerApplicationFormProps = {
-  job: Job | null;
+  job: CareerSummary | null;
 };
 
-/** Form lamaran kontekstual — judul berubah sesuai job terpilih (bagian 4.9 issue.md). */
+function fileExtension(fileName: string): string {
+  const dot = fileName.lastIndexOf(".");
+  return dot === -1 ? "" : fileName.slice(dot).toLowerCase();
+}
+
+function formatMaxSize(): string {
+  return `${Math.round(MAX_ATTACHMENT_BYTES / (1024 * 1024))} MB`;
+}
+
+/** Form lamaran kontekstual — judul berubah sesuai lowongan terpilih (issue #36). */
 export function CareerApplicationForm({job}: CareerApplicationFormProps) {
   const {
     register,
@@ -34,24 +48,55 @@ export function CareerApplicationForm({job}: CareerApplicationFormProps) {
     formState: {errors, isSubmitting},
   } = useForm<ApplicationValues>({resolver: zodResolver(applicationSchema)});
   const [resume, setResume] = useState<File | null>(null);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    setResume(event.target.files?.[0] ?? null);
+    const file = event.target.files?.[0] ?? null;
+    setAttachmentError(null);
+
+    if (!file) {
+      setResume(null);
+      return;
+    }
+
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      setAttachmentError(`"${file.name}" exceeds the maximum size of ${formatMaxSize()}.`);
+      event.target.value = "";
+      return;
+    }
+
+    if (!(ALLOWED_ATTACHMENT_EXTENSIONS as readonly string[]).includes(fileExtension(file.name))) {
+      setAttachmentError(`"${file.name}" is not a supported file type.`);
+      event.target.value = "";
+      return;
+    }
+
+    setResume(file);
   }
 
   async function onSubmit(values: ApplicationValues) {
-    await jobApplicationService.submit({
-      jobId: job?.id,
-      fullName: values.fullName,
-      email: values.email,
-      phone: values.phone,
-      coverNote: values.coverNote,
-      resumeFileName: resume?.name,
-    });
-    setSent(true);
-    reset();
-    setResume(null);
+    setSubmitError(null);
+    try {
+      await careerApplicationService.submit({
+        jobId: job?.id, // undefined = lamaran spontan (D7)
+        name: values.fullName, // API memakai `name`, bukan `fullName`
+        email: values.email,
+        phone: values.phone,
+        message: values.coverNote, // API memakai `message`, bukan `coverNote`
+        attachment: resume ?? undefined,
+      });
+      setSent(true);
+      reset();
+      setResume(null);
+    } catch (error) {
+      // ApiError dari apiClient sudah membawa pesan backend (`error.message` pada
+      // envelope), mis. "job not found" saat lowongan keburu ditutup.
+      setSubmitError(
+        error instanceof ApiError ? error.message : "Something went wrong. Please try again."
+      );
+    }
   }
 
   if (sent) {
@@ -68,7 +113,7 @@ export function CareerApplicationForm({job}: CareerApplicationFormProps) {
   return (
     <div>
       <h2 className="font-display text-h3">
-        {job ? `Applying for: ${job.title}` : "Send us a spontaneous application"}
+        {job ? `Applying for: ${job.positionTitle}` : "Send us a spontaneous application"}
       </h2>
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-6 space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -103,13 +148,16 @@ export function CareerApplicationForm({job}: CareerApplicationFormProps) {
               Attach CV
               <input
                 type="file"
-                accept=".pdf,.doc,.docx"
+                accept={ALLOWED_ATTACHMENT_EXTENSIONS.join(",")}
                 className="hidden"
                 onChange={handleFileChange}
               />
             </label>
           )}
+          {attachmentError ? <p className="mt-1 text-xs text-danger">{attachmentError}</p> : null}
         </div>
+
+        {submitError ? <p className="text-xs text-danger">{submitError}</p> : null}
 
         <Button type="submit" variant="dark" size="lg" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Sending…" : "Send Application"}

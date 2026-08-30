@@ -1,6 +1,5 @@
 import type {CategoryRepository} from "@/domain/repositories/category-repository";
 import type {CollectionRepository} from "@/domain/repositories/collection-repository";
-import type {JobRepository} from "@/domain/repositories/job-repository";
 import type {ProductRepository} from "@/domain/repositories/product-repository";
 import type {SiteSettingsRepository} from "@/domain/repositories/site-settings-repository";
 import type {LandingContentRepository} from "@/domain/repositories/landing-content-repository";
@@ -10,9 +9,9 @@ import type {NavigationRepository} from "@/domain/repositories/navigation-reposi
 import type {ProductCatalogRepository} from "@/domain/repositories/product-catalog-repository";
 import type {CatalogTaxonomyRepository} from "@/domain/repositories/catalog-taxonomy-repository";
 import type {CollectionCatalogRepository} from "@/domain/repositories/collection-catalog-repository";
+import type {CareerListRepository} from "@/domain/repositories/career-repository";
 import {MockCategoryRepository} from "@/infrastructure/mock/repositories/mock-category-repository";
 import {MockCollectionRepository} from "@/infrastructure/mock/repositories/mock-collection-repository";
-import {MockJobRepository} from "@/infrastructure/mock/repositories/mock-job-repository";
 import {MockProductRepository} from "@/infrastructure/mock/repositories/mock-product-repository";
 import {MockSiteSettingsRepository} from "@/infrastructure/mock/repositories/mock-site-settings-repository";
 import {HttpLandingContentRepository} from "@/infrastructure/repositories/http-landing-content-repository";
@@ -22,6 +21,7 @@ import {HttpNavigationRepository} from "@/infrastructure/repositories/http-navig
 import {HttpProductCatalogRepository} from "@/infrastructure/repositories/http-product-catalog-repository";
 import {HttpCatalogTaxonomyRepository} from "@/infrastructure/repositories/http-catalog-taxonomy-repository";
 import {HttpCollectionCatalogRepository} from "@/infrastructure/repositories/http-collection-catalog-repository";
+import {HttpCareerRepository} from "@/infrastructure/repositories/http-career-repository";
 
 // Satu-satunya berkas yang berubah saat backend REST siap (ISSUE-15) — bagian
 // 2.2 issue.md. Tukar implementasi mock dengan implementasi Http* di sini,
@@ -35,9 +35,6 @@ export const collectionRepository: CollectionRepository = new MockCollectionRepo
 
 export const categoryRepository: CategoryRepository = new MockCategoryRepository();
 // nanti -> new HttpCategoryRepository(apiClient);
-
-export const jobRepository: JobRepository = new MockJobRepository();
-// nanti -> new HttpJobRepository(apiClient);
 
 export const siteSettingsRepository: SiteSettingsRepository = new MockSiteSettingsRepository();
 // nanti -> new HttpSiteSettingsRepository(apiClient);
@@ -67,6 +64,9 @@ export const catalogTaxonomyRepository: CatalogTaxonomyRepository =
 // Collection mock dan akan dimigrasikan di issue terpisah (D1, D2).
 export const collectionCatalogRepository: CollectionCatalogRepository =
   new HttpCollectionCatalogRepository();
+
+// Lowongan publik /info/career (issue #36) — contract.md Bagian 37.
+export const careerRepository: CareerListRepository = new HttpCareerRepository();
 
 // `productSearchRepository` (fitur search product) SENGAJA TIDAK ada di sini.
 // Berkas ini mengimpor http-navigation-repository.ts -> server-fetch.ts, yang
