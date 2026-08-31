@@ -9,7 +9,7 @@ import {Button} from "@/presentation/components/ui/button";
 import {Container} from "@/presentation/components/ui/container";
 import {Eyebrow} from "@/presentation/components/ui/eyebrow";
 import {FormField} from "@/presentation/components/ui/form-field";
-import {PlaceholderImage} from "@/presentation/components/ui/placeholder-image";
+import {RemoteImage} from "@/presentation/components/ui/remote-image";
 import {useAuth} from "@/presentation/providers/auth-provider";
 import {useToast} from "@/presentation/providers/toast-provider";
 import {useSavedProducts} from "@/application/hooks/use-saved-products";
@@ -39,7 +39,14 @@ type ProfileValues = z.infer<typeof profileSchema>;
 export function AccountPage() {
   const {user, signOut, updateProfile} = useAuth();
   const {toast} = useToast();
-  const savedProducts = useSavedProducts();
+  const {
+    products: savedProducts,
+    isLoading: savedLoading,
+    isError: savedError,
+    hasMore: savedHasMore,
+    isLoadingMore: savedLoadingMore,
+    loadMore: loadMoreSaved,
+  } = useSavedProducts();
   const [profileError, setProfileError] = useState<string | undefined>();
 
   const profileForm = useForm<ProfileValues>({
@@ -117,20 +124,39 @@ export function AccountPage() {
 
         <div>
           <h2 className="text-xs uppercase tracking-label text-muted">Saved Pieces</h2>
-          {savedProducts.length === 0 ? (
+          {savedLoading ? (
+            <p className="mt-4 text-sm text-muted">Loading your saved pieces…</p>
+          ) : savedError ? (
+            <p className="mt-4 text-sm text-muted">
+              Saved pieces are unavailable right now. Please try again shortly.
+            </p>
+          ) : savedProducts.length === 0 ? (
             <p className="mt-4 text-sm text-muted">Pieces you save will appear here.</p>
           ) : (
-            <div className="mt-4 grid grid-cols-2 gap-6 sm:grid-cols-3">
-              {savedProducts.map((product) => (
-                <Link key={product.id} href={`/product/${product.id}`} className="block">
-                  <div className="aspect-square bg-warm">
-                    <PlaceholderImage label={product.name} />
-                  </div>
-                  <p className="mt-2 text-xs">{product.name}</p>
-                  <p className="text-xs text-muted">{formatIDR(product.price)}</p>
-                </Link>
-              ))}
-            </div>
+            <>
+              <div className="mt-4 grid grid-cols-2 gap-6 sm:grid-cols-3">
+                {savedProducts.map((product) => (
+                  <Link key={product.id} href={`/product/${product.sku}`} className="block">
+                    {/* RemoteImage memakai `fill` — pembungkusnya wajib relative + overflow-hidden. */}
+                    <div className="relative aspect-square overflow-hidden bg-warm">
+                      <RemoteImage
+                        src={product.image}
+                        alt={product.name}
+                        label={product.name}
+                        sizes="(min-width: 640px) 20vw, 40vw"
+                      />
+                    </div>
+                    <p className="mt-2 text-xs">{product.name}</p>
+                    <p className="text-xs text-muted">{formatIDR(product.priceAfterDiscount)}</p>
+                  </Link>
+                ))}
+              </div>
+              {savedHasMore ? (
+                <Button className="mt-6" onClick={loadMoreSaved} disabled={savedLoadingMore}>
+                  {savedLoadingMore ? "Loading…" : "Load More"}
+                </Button>
+              ) : null}
+            </>
           )}
         </div>
       </div>

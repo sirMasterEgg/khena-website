@@ -6,7 +6,7 @@ import {z} from "zod";
  * jadi `null` lalu dibuang di mapper, sisanya tetap tampil. `.catch([])` di
  * level array adalah jaring terakhir kalau `data` ternyata bukan array.
  */
-const productSummarySchema = z.object({
+export const productSummarySchema = z.object({
   id: z.string(),
   name: z.string(),
   sku: z.string(),

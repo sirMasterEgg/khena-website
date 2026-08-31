@@ -8,7 +8,7 @@ import {cn} from "@/presentation/lib/cn";
 import {useWishlist} from "@/presentation/providers/wishlist-provider";
 
 export type WishlistButtonProps = {
-  productId: string;
+  sku: string;
   productName: string;
   className?: string;
 };
@@ -16,28 +16,30 @@ export type WishlistButtonProps = {
 /**
  * Tombol wishlist — komponen terpisah dari ProductCard (bagian 6.2 issue.md).
  *
- * Sengaja TIDAK digerbang oleh status login (beda dari sebelum ISSUE-17):
- * tamu boleh menyimpan wishlist lokal (`khena.wishlist.guest`) yang nanti
- * digabung otomatis ke akun begitu dia sign in — lihat wishlist-provider.tsx
- * bagian 8a issue.md. Menyembunyikan tombol ini untuk tamu akan membuat fitur
- * itu tidak pernah bisa dipakai dari UI.
+ * Wishlist wajib login (D2 issue #38): tamu yang menekan tombol ini tidak
+ * menyimpan apa pun, melainkan diarahkan ke drawer sign in oleh
+ * `WishlistProvider`. Menyembunyikan tombol untuk tamu tetap tidak dilakukan
+ * supaya ajakan sign in itu terlihat.
  */
-export function WishlistButton({productId, productName, className}: WishlistButtonProps) {
+export function WishlistButton({sku, productName, className}: WishlistButtonProps) {
   const {isSaved, toggle} = useWishlist();
   const [pulse, setPulse] = useState<"save" | "remove" | null>(null);
-  const saved = isSaved(productId);
+  const saved = isSaved(sku);
 
   function handleClick(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
-    const outcome = toggle(productId);
+    const outcome = toggle(sku);
+    // Tamu diarahkan ke drawer sign in oleh provider — tidak ada perubahan
+    // state wishlist, jadi jangan memutar animasi seolah-olah tersimpan.
+    if (outcome === "signin-required") return;
     setPulse(outcome === "saved" ? "save" : "remove");
   }
 
   return (
     <button
       type="button"
-      data-product-id={productId}
+      data-sku={sku}
       aria-label={saved ? `Remove ${productName} from wishlist` : `Save ${productName} to wishlist`}
       aria-pressed={saved}
       onClick={handleClick}

@@ -19,6 +19,14 @@ export const API_ENDPOINTS = {
   collections: {
     list: "/collections",
   },
+  // contract.md Bagian 35. BUKAN "/admin/wishlists" (tidak ada di kontrak) dan
+  // BUKAN "/api/wishlists" — base URL sudah mengandung /api.
+  wishlists: {
+    list: "/wishlists",
+    add: "/wishlists",
+    /** `sku` = products.base_sku, bukan id baris wishlist. */
+    remove: (sku: string) => `/wishlists/${encodeURIComponent(sku)}`,
+  },
   // contract.md Bagian 37. BUKAN "/admin/jobs" (Bagian 26, endpoint dashboard
   // admin dengan bentuk data berbeda) dan BUKAN "/api/careers" (base URL sudah
   // mengandung /api).
