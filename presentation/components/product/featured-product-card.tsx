@@ -14,7 +14,7 @@ export type FeaturedProductCardProps = {
  * Kartu produk "Designed for Life" — bagian Fase 6 issue #27. Kartu terpisah
  * dari `ProductCard`: tanpa harga, tanpa `QuickAddButton` (entity
  * `FeaturedProduct` memang tidak membawa data itu), tetap ada
- * `WishlistButton` karena hanya butuh `productId` + `productName`.
+ * `WishlistButton` karena hanya butuh `sku` + `productName`.
  */
 export function FeaturedProductCard({product, className}: FeaturedProductCardProps) {
   return (
@@ -37,7 +37,7 @@ export function FeaturedProductCard({product, className}: FeaturedProductCardPro
         ) : null}
 
         <WishlistButton
-          productId={product.id}
+          sku={product.sku}
           productName={product.name}
           className="absolute right-4 top-4"
         />

@@ -8,7 +8,7 @@ import {z} from "zod";
 import {Drawer} from "@/presentation/components/ui/drawer";
 import {FormField} from "@/presentation/components/ui/form-field";
 import {Button} from "@/presentation/components/ui/button";
-import {PlaceholderImage} from "@/presentation/components/ui/placeholder-image";
+import {RemoteImage} from "@/presentation/components/ui/remote-image";
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
 import {useAuth} from "@/presentation/providers/auth-provider";
@@ -60,7 +60,14 @@ export function AccountDrawer() {
   const open = isOpen("account");
   const {user, signIn, signUp, signOut} = useAuth();
   const {toast} = useToast();
-  const savedProducts = useSavedProducts();
+  const {
+    products: savedProducts,
+    isLoading: savedLoading,
+    isError: savedError,
+    hasMore: savedHasMore,
+    isLoadingMore: savedLoadingMore,
+    loadMore: loadMoreSaved,
+  } = useSavedProducts();
 
   const [mode, setMode] = useState<GuestMode>("signin");
   const [formError, setFormError] = useState<string | undefined>();
@@ -143,25 +150,44 @@ export function AccountDrawer() {
 
             <div className="mt-10">
               <h3 className="text-xs uppercase tracking-label text-muted">Saved Pieces</h3>
-              {savedProducts.length === 0 ? (
+              {savedLoading ? (
+                <p className="mt-3 text-sm text-muted">Loading your saved pieces…</p>
+              ) : savedError ? (
+                <p className="mt-3 text-sm text-muted">
+                  Saved pieces are unavailable right now. Please try again shortly.
+                </p>
+              ) : savedProducts.length === 0 ? (
                 <p className="mt-3 text-sm text-muted">Pieces you save will appear here.</p>
               ) : (
-                <div className="mt-4 grid grid-cols-2 gap-4">
-                  {savedProducts.map((product) => (
-                    <Link
-                      key={product.id}
-                      href={`/product/${product.id}`}
-                      onClick={close}
-                      className="block"
-                    >
-                      <div className="aspect-square bg-warm">
-                        <PlaceholderImage label={product.name} />
-                      </div>
-                      <p className="mt-2 text-xs">{product.name}</p>
-                      <p className="text-xs text-muted">{formatIDR(product.price)}</p>
-                    </Link>
-                  ))}
-                </div>
+                <>
+                  <div className="mt-4 grid grid-cols-2 gap-4">
+                    {savedProducts.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={`/product/${product.sku}`}
+                        onClick={close}
+                        className="block"
+                      >
+                        {/* RemoteImage memakai `fill` — pembungkusnya wajib relative + overflow-hidden. */}
+                        <div className="relative aspect-square overflow-hidden bg-warm">
+                          <RemoteImage
+                            src={product.image}
+                            alt={product.name}
+                            label={product.name}
+                            sizes="(min-width: 640px) 20vw, 40vw"
+                          />
+                        </div>
+                        <p className="mt-2 text-xs">{product.name}</p>
+                        <p className="text-xs text-muted">{formatIDR(product.priceAfterDiscount)}</p>
+                      </Link>
+                    ))}
+                  </div>
+                  {savedHasMore ? (
+                    <Button className="mt-4 w-full" onClick={loadMoreSaved} disabled={savedLoadingMore}>
+                      {savedLoadingMore ? "Loading…" : "Load More"}
+                    </Button>
+                  ) : null}
+                </>
               )}
             </div>
 

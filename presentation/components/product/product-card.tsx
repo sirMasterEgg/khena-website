@@ -45,7 +45,7 @@ export function ProductCard({
         ) : null}
 
         <WishlistButton
-          productId={product.id}
+          sku={product.sku}
           productName={product.name}
           className="absolute right-4 top-4"
         />
