@@ -4,10 +4,14 @@ export const API_ENDPOINTS = {
     // BUKAN "/admin/pages" — itu endpoint dashboard admin.
     list: "/pages",
   },
+  // contract.md Bagian 33. Identifier di path SELALU `products.base_sku`
+  // (SKU produk), BUKAN uuid dan BUKAN SKU varian — memanggil dengan uuid
+  // dibalas `400 product not found`. BUKAN "/admin/products" dan BUKAN
+  // "/api/products": base URL sudah mengandung /api.
   products: {
-    // contract.md Bagian 33 — dipakai fitur search (query `search`).
     list: "/products",
-    detail: (id: string) => `/products/${id}`,
+    detail: (sku: string) => `/products/${encodeURIComponent(sku)}`,
+    related: (sku: string) => `/products/${encodeURIComponent(sku)}/related`,
   },
   // Room type + kategori published, dua level sekaligus — contract.md Bagian 32.
   // BUKAN "/admin/categories" (Bagian 9, bentuk datanya berbeda) dan BUKAN

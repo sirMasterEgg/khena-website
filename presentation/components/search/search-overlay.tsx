@@ -27,12 +27,6 @@ const DEBOUNCE_MS = 300;
  * tidak membawa slug kategori/koleksi seperti entity `Product` mock — jadi
  * subtitle di bawah nama produk sekarang menampilkan harga, bukan
  * "Kategori · Koleksi" seperti versi mock.
- *
- * Konsekuensi yang diterima (sama pola dengan issue navbar #29 soal /shop):
- * `/product/[id]` masih 100% mock, sedangkan id hasil pencarian ini adalah
- * UUID asli dari backend — klik hasil pencarian kemungkinan besar mengarah
- * ke halaman produk kosong sampai `/product/[id]` ikut dimigrasikan di issue
- * terpisah.
  */
 export function SearchOverlay() {
   const {isOpen, close} = useUi();
@@ -128,7 +122,7 @@ export function SearchOverlay() {
                 {results.map((product) => (
                   <li key={product.id}>
                     <Link
-                      href={`/product/${product.id}`}
+                      href={`/product/${product.sku}`}
                       onClick={handleClose}
                       className="flex items-center gap-4 py-4"
                     >

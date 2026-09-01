@@ -29,8 +29,7 @@ export function ProductSummaryCard({product, showPrice = true, className}: Produ
   const soldOut = isProductSummarySoldOut(product);
 
   return (
-    // Tautan mengikuti pola featured-product-card.tsx (commit dea77d7). PDP
-    // masih mock (Pertanyaan Terbuka #4) — link belum aktif sampai PDP dimigrasikan.
+    // Tautan mengikuti pola featured-product-card.tsx (commit dea77d7).
     <Link href={`/product/${product.sku}`} className={cn("block", className)}>
       <Tile className="aspect-[383/384] bg-warm">
         <div className="absolute inset-10 flex items-center justify-center">

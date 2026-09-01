@@ -1,5 +1,4 @@
-import {PlaceholderImage} from "@/presentation/components/ui/placeholder-image";
-import {COLOR_SWATCHES} from "@/domain/entities/color-swatch";
+import {RemoteImage} from "@/presentation/components/ui/remote-image";
 import {formatIDR} from "@/presentation/lib/format";
 import type {CartItem} from "@/presentation/providers/cart-provider";
 
@@ -25,22 +24,19 @@ export function OrderSummary({items, subtotal, breakdown}: OrderSummaryProps) {
       <h2 className="font-display text-lg">Order Summary</h2>
 
       <ul className="mt-4 space-y-4">
-        {items.map((item) => {
-          const colorSwatch = item.color ? COLOR_SWATCHES[item.color] : undefined;
-          return (
-            <li key={`${item.productId}::${item.color ?? ""}`} className="flex gap-3">
-              <div className="size-16 shrink-0">
-                <PlaceholderImage label={item.name} />
-              </div>
-              <div className="flex-1 text-sm">
-                <p>{item.name}</p>
-                {colorSwatch ? <p className="text-xs text-muted">{colorSwatch.label}</p> : null}
-                <p className="text-xs text-muted">Qty {item.qty}</p>
-              </div>
-              <p className="shrink-0 text-sm">{formatIDR(item.price * item.qty)}</p>
-            </li>
-          );
-        })}
+        {items.map((item) => (
+          <li key={item.variantSku} className="flex gap-3">
+            <div className="relative size-16 shrink-0 overflow-hidden">
+              <RemoteImage src={item.image} alt={item.name} label={item.name} />
+            </div>
+            <div className="flex-1 text-sm">
+              <p>{item.name}</p>
+              {item.colorName ? <p className="text-xs text-muted">{item.colorName}</p> : null}
+              <p className="text-xs text-muted">Qty {item.qty}</p>
+            </div>
+            <p className="shrink-0 text-sm">{formatIDR(item.priceAfterDiscount * item.qty)}</p>
+          </li>
+        ))}
       </ul>
 
       <div className="mt-6 space-y-2 border-t border-hairline pt-4 text-sm">

@@ -1,5 +1,6 @@
 export type OrderLineItem = {
-  productId: string;
+  /** SKU varian yang dibeli. */
+  sku: string;
   name: string;
   color?: string;
   qty: number;

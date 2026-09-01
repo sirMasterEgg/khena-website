@@ -10,6 +10,7 @@ import type {ProductCatalogRepository} from "@/domain/repositories/product-catal
 import type {CatalogTaxonomyRepository} from "@/domain/repositories/catalog-taxonomy-repository";
 import type {CollectionCatalogRepository} from "@/domain/repositories/collection-catalog-repository";
 import type {CareerListRepository} from "@/domain/repositories/career-repository";
+import type {ProductDetailRepository} from "@/domain/repositories/product-detail-repository";
 import {MockCategoryRepository} from "@/infrastructure/mock/repositories/mock-category-repository";
 import {MockCollectionRepository} from "@/infrastructure/mock/repositories/mock-collection-repository";
 import {MockProductRepository} from "@/infrastructure/mock/repositories/mock-product-repository";
@@ -22,6 +23,7 @@ import {HttpProductCatalogRepository} from "@/infrastructure/repositories/http-p
 import {HttpCatalogTaxonomyRepository} from "@/infrastructure/repositories/http-catalog-taxonomy-repository";
 import {HttpCollectionCatalogRepository} from "@/infrastructure/repositories/http-collection-catalog-repository";
 import {HttpCareerRepository} from "@/infrastructure/repositories/http-career-repository";
+import {HttpProductDetailRepository} from "@/infrastructure/repositories/http-product-detail-repository";
 
 // Satu-satunya berkas yang berubah saat backend REST siap (ISSUE-15) — bagian
 // 2.2 issue.md. Tukar implementasi mock dengan implementasi Http* di sini,
@@ -47,12 +49,12 @@ export const featuredProductRepository: FeaturedProductRepository = new HttpFeat
 export const infoContentRepository: InfoContentRepository = new HttpInfoContentRepository();
 
 // Navigasi navbar (issue ini) — sudah lewat backend REST. Sengaja TIDAK menukar
-// categoryRepository/collectionRepository di atas: /categories dan /product/[id]
-// masih memakai mock dan akan dimigrasikan di issue terpisah.
+// categoryRepository/collectionRepository di atas: /categories masih memakai
+// mock dan akan dimigrasikan di issue terpisah.
 export const navigationRepository: NavigationRepository = new HttpNavigationRepository();
 
 // Katalog /shop (issue #32) — sudah lewat backend REST. `productRepository` mock di atas
-// SENGAJA dibiarkan: /product/[id], cart, dan wishlist masih memakai entity Product mock.
+// SENGAJA dibiarkan: /categories masih memakai entity Product mock (D12).
 export const productCatalogRepository: ProductCatalogRepository =
   new HttpProductCatalogRepository();
 export const catalogTaxonomyRepository: CatalogTaxonomyRepository =
@@ -60,13 +62,19 @@ export const catalogTaxonomyRepository: CatalogTaxonomyRepository =
 
 // Halaman /collections (issue #34) — sudah lewat backend REST.
 // `collectionRepository` mock di atas SENGAJA dibiarkan: carousel landing
-// (app/page.tsx) dan PDP (app/product/[id]/page.tsx) masih memakai entity
-// Collection mock dan akan dimigrasikan di issue terpisah (D1, D2).
+// (app/page.tsx) masih memakai entity Collection mock dan akan dimigrasikan
+// di issue terpisah.
 export const collectionCatalogRepository: CollectionCatalogRepository =
   new HttpCollectionCatalogRepository();
 
 // Lowongan publik /info/career (issue #36) — contract.md Bagian 37.
 export const careerRepository: CareerListRepository = new HttpCareerRepository();
+
+// PDP /product/[sku] (issue #40) — contract.md Bagian 33. `productRepository`
+// mock di atas SENGAJA dibiarkan: /categories masih memakainya untuk
+// menghitung jumlah produk per kategori (D12).
+export const productDetailRepository: ProductDetailRepository =
+  new HttpProductDetailRepository();
 
 // `productSearchRepository` (fitur search product) SENGAJA TIDAK ada di sini.
 // Berkas ini mengimpor http-navigation-repository.ts -> server-fetch.ts, yang

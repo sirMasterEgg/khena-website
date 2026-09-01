@@ -2,7 +2,7 @@ import type {FeaturedProductRepository} from "@/domain/repositories/featured-pro
 import type {FeaturedProduct} from "@/domain/entities/featured-product";
 import {API_ENDPOINTS} from "@/infrastructure/api/endpoints";
 import {serverFetch} from "@/infrastructure/api/server-fetch";
-import {productDetailSchema} from "@/infrastructure/api/schemas/product";
+import {featuredProductSchema} from "@/infrastructure/api/schemas/product";
 import {toFeaturedProduct} from "@/infrastructure/api/mappers/featured-product";
 
 // Tidak ada endpoint batch untuk produk (contract.md bagian 33) — satu request
@@ -34,7 +34,7 @@ export class HttpFeaturedProductRepository implements FeaturedProductRepository 
         console.warn(`[featured-product] gagal memuat produk ${targetIds[index]}`, result.reason);
         return;
       }
-      const parsed = productDetailSchema.safeParse(result.value);
+      const parsed = featuredProductSchema.safeParse(result.value);
       if (!parsed.success) {
         console.warn(`[featured-product] bentuk data tidak valid untuk produk ${targetIds[index]}`);
         return;
