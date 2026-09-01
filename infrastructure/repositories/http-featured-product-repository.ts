@@ -19,9 +19,12 @@ export class HttpFeaturedProductRepository implements FeaturedProductRepository 
     // mengembalikan 400 dan tidak boleh menjatuhkan seluruh section.
     // allSettled menjaga urutan index (urutan editorial dari CMS), jadi hasil
     // gagal cukup dibuang tanpa perlu disortir ulang.
+    // `products.detailById`, BUKAN `products.detail` — CMS `designedForLife.productIds`
+    // berisi uuid `products.id`, sementara `products.detail`/`:sku` sejak issue #40
+    // hanya menerima SKU (contract.md Bagian 33: `GET /api/products/id/:id`).
     const results = await Promise.allSettled(
       targetIds.map((id) =>
-        serverFetch<unknown>(API_ENDPOINTS.products.detail(id), {
+        serverFetch<unknown>(API_ENDPOINTS.products.detailById(id), {
           revalidateSeconds: 300,
           tags: ["products:detail", `products:detail:${id}`],
         })

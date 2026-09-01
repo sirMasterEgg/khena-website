@@ -4,14 +4,21 @@ export const API_ENDPOINTS = {
     // BUKAN "/admin/pages" — itu endpoint dashboard admin.
     list: "/pages",
   },
-  // contract.md Bagian 33. Identifier di path SELALU `products.base_sku`
+  // contract.md Bagian 33. `detail`/`related` menerima `products.base_sku`
   // (SKU produk), BUKAN uuid dan BUKAN SKU varian — memanggil dengan uuid
-  // dibalas `400 product not found`. BUKAN "/admin/products" dan BUKAN
-  // "/api/products": base URL sudah mengandung /api.
+  // dibalas `400 product not found`. Untuk uuid pakai `detailById` (jalur
+  // terpisah di bawah). BUKAN "/admin/products" dan BUKAN "/api/products":
+  // base URL sudah mengandung /api.
   products: {
     list: "/products",
     detail: (sku: string) => `/products/${encodeURIComponent(sku)}`,
     related: (sku: string) => `/products/${encodeURIComponent(sku)}/related`,
+    /**
+     * Jalur alternatif — bentuk response identik dengan `detail(sku)`, tapi
+     * dicari lewat uuid `products.id`. Dipakai HttpFeaturedProductRepository:
+     * `designedForLife.productIds` dari CMS berisi uuid, bukan SKU.
+     */
+    detailById: (id: string) => `/products/id/${encodeURIComponent(id)}`,
   },
   // Room type + kategori published, dua level sekaligus — contract.md Bagian 32.
   // BUKAN "/admin/categories" (Bagian 9, bentuk datanya berbeda) dan BUKAN
