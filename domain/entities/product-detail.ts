@@ -6,7 +6,8 @@ export type ProductVariant = {
   id: string;
   /** `detail_products.detail_product_sku` — SKU **varian**, bukan SKU produk. */
   sku: string;
-  image?: string;
+  /** Seluruh foto varian ini, terurut dari backend. Bisa `[]` (belum ada foto). */
+  images: string[];
   colorName?: string;
   /** mis. `#B91C1C`. Dipakai langsung sebagai warna chip. */
   colorHex?: string;

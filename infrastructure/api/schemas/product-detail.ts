@@ -27,7 +27,8 @@ const dimensionSetSchema = z
 export const productDetailVariantSchema = z.object({
   id: z.string(),
   sku: z.string(),
-  image: nullableText,
+  // Backend commit 3cad33a: `image` tunggal diganti `images` array (bisa []).
+  images: z.array(z.string()).catch([]),
   color: colorSchema,
   price: z.number().catch(0),
   discountPercent: z.number().catch(0),

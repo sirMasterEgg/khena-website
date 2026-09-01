@@ -42,7 +42,7 @@ export function toProductDetail(raw: unknown): ProductDetail {
       .map((variant) => ({
         id: variant.id,
         sku: variant.sku,
-        image: variant.image ?? undefined,
+        images: variant.images,
         colorName: variant.color?.name ?? undefined,
         colorHex: variant.color?.hexCode ?? undefined,
         price: variant.price,

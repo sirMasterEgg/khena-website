@@ -33,6 +33,9 @@ export type ProductDetailViewProps = {
 /** Halaman detail produk — galeri varian + info + aksi (issue #40). */
 export function ProductDetailView({product, relatedProducts}: ProductDetailViewProps) {
   const [selectedSku, setSelectedSku] = useState(() => getDefaultVariant(product)?.sku);
+  // Indeks foto di dalam `variant.images` yang sedang tampil — direset ke 0
+  // setiap kali varian berganti (foto varian lain punya urutan sendiri).
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [qty, setQty] = useState(1);
   const {toast} = useToast();
   const {open: openOverlay} = useUi();
@@ -40,6 +43,7 @@ export function ProductDetailView({product, relatedProducts}: ProductDetailViewP
 
   const variant =
     product.variants.find((item) => item.sku === selectedSku) ?? getDefaultVariant(product);
+  const activeImage = variant?.images[activeImageIndex] ?? variant?.images[0];
 
   const soldOut = variant ? isVariantSoldOut(variant) : false;
   const lowStock = variant ? isVariantLowStock(variant) : false;
@@ -51,6 +55,7 @@ export function ProductDetailView({product, relatedProducts}: ProductDetailViewP
 
   function selectVariant(sku: string) {
     setSelectedSku(sku);
+    setActiveImageIndex(0);
     // Stok varian baru bisa lebih kecil dari qty sekarang.
     setQty(1);
   }
@@ -62,7 +67,7 @@ export function ProductDetailView({product, relatedProducts}: ProductDetailViewP
         productSku: product.sku,
         variantSku: variant.sku,
         name: product.name,
-        image: variant.image,
+        image: variant.images[0],
         colorName: variant.colorName,
         colorHex: variant.colorHex,
         price: variant.price,
@@ -99,7 +104,12 @@ export function ProductDetailView({product, relatedProducts}: ProductDetailViewP
             className="relative flex aspect-square items-center justify-center overflow-hidden transition-colors duration-500 ease-brand"
             style={{backgroundColor: "#F4EFEA"}}
           >
-            <RemoteImage src={variant?.image} alt={product.name} label={product.name} sizes="(min-width: 1024px) 50vw, 100vw" />
+            <RemoteImage
+              src={activeImage}
+              alt={product.name}
+              label={product.name}
+              sizes="(min-width: 1024px) 50vw, 100vw"
+            />
 
             {variant?.colorName ? (
               <span className="absolute right-6 top-6 text-xs uppercase tracking-label text-ink-soft">
@@ -121,21 +131,21 @@ export function ProductDetailView({product, relatedProducts}: ProductDetailViewP
             ) : null}
           </div>
 
-          {product.variants.length > 1 ? (
+          {variant && variant.images.length > 1 ? (
             <div className="mt-4 grid grid-cols-4 gap-4">
-              {product.variants.map((item) => (
+              {variant.images.map((image, index) => (
                 <button
-                  key={item.id}
+                  key={`${image}-${index}`}
                   type="button"
-                  aria-label={`Lihat varian ${item.colorName ?? item.sku}`}
-                  aria-pressed={item.sku === variant?.sku}
-                  onClick={() => selectVariant(item.sku)}
+                  aria-label={`Lihat foto ${index + 1}`}
+                  aria-pressed={index === activeImageIndex}
+                  onClick={() => setActiveImageIndex(index)}
                   className={cn(
                     "relative aspect-square overflow-hidden border transition-colors duration-300 ease-brand",
-                    item.sku === variant?.sku ? "border-ink" : "border-transparent"
+                    index === activeImageIndex ? "border-ink" : "border-transparent"
                   )}
                 >
-                  <RemoteImage src={item.image} alt={item.colorName ?? product.name} label={item.colorName ?? product.name} />
+                  <RemoteImage src={image} alt={product.name} label={product.name} />
                 </button>
               ))}
             </div>
