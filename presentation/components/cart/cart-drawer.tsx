@@ -142,13 +142,6 @@ export function CartDrawer() {
             <Button href="/checkout" variant="dark" size="lg" className="w-full" onClick={close}>
               Proceed to Checkout
             </Button>
-            <button
-              type="button"
-              onClick={close}
-              className="w-full text-center text-xs uppercase tracking-label text-muted hover:text-ink"
-            >
-              Continue shopping
-            </button>
           </div>
         </>
       )}
