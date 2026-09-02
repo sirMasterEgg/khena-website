@@ -205,12 +205,23 @@ export function ProductDetailView({product, relatedProducts}: ProductDetailViewP
                     aria-label={item.colorName ?? item.sku}
                     aria-pressed={item.sku === variant?.sku}
                     onClick={() => selectVariant(item.sku)}
-                    style={{backgroundColor: item.colorHex ?? "#E4E2DD"}}
                     className={cn(
-                      "size-8 border-2 transition-colors duration-300 ease-brand",
+                      "size-10 border-2 p-1 transition-colors duration-300 ease-brand",
                       item.sku === variant?.sku ? "border-ink" : "border-transparent"
                     )}
-                  />
+                  >
+                    {item.colorSwatch ? (
+                      <span className="relative block size-full overflow-hidden" aria-hidden="true">
+                        <RemoteImage src={item.colorSwatch} alt="" />
+                      </span>
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className="block size-full"
+                        style={{backgroundColor: item.colorHex ?? "#E4E2DD"}}
+                      />
+                    )}
+                  </button>
                 ))}
               </div>
             </div>

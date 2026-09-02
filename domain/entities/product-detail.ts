@@ -11,6 +11,8 @@ export type ProductVariant = {
   colorName?: string;
   /** mis. `#B91C1C`. Dipakai langsung sebagai warna chip. */
   colorHex?: string;
+  /** Foto swatch warna (`colors.swatch_photo`), kalau ada — dipakai di chip pemilihan varian sebagai pengganti `colorHex` polos. */
+  colorSwatch?: string;
   price: number;
   discountPercent: number;
   priceAfterDiscount: number;

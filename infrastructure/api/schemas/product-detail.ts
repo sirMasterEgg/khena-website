@@ -9,7 +9,7 @@ const nullableText = z.string().nullable().catch(null);
 const nullableNumber = z.number().nullable().catch(null);
 
 const colorSchema = z
-  .object({name: nullableText, hexCode: nullableText})
+  .object({name: nullableText, hexCode: nullableText, swatch: nullableText})
   .nullable()
   .catch(null);
 

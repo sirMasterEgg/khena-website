@@ -45,6 +45,7 @@ export function toProductDetail(raw: unknown): ProductDetail {
         images: variant.images,
         colorName: variant.color?.name ?? undefined,
         colorHex: variant.color?.hexCode ?? undefined,
+        colorSwatch: variant.color?.swatch ?? undefined,
         price: variant.price,
         discountPercent: variant.discountPercent,
         priceAfterDiscount: variant.priceAfterDiscount,
