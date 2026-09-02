@@ -127,7 +127,12 @@ export function SearchOverlay() {
                       className="flex items-center gap-4 py-4"
                     >
                       <div className="relative size-16 shrink-0 overflow-hidden">
-                        <RemoteImage src={product.image} alt={product.name} label={product.name} />
+                        <RemoteImage
+                          src={product.image}
+                          alt={product.name}
+                          label={product.name}
+                          sizes="64px"
+                        />
                       </div>
                       <div className="flex-1">
                         <p className="text-sm">{product.name}</p>

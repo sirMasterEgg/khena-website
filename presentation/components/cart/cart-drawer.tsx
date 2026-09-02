@@ -73,7 +73,7 @@ export function CartDrawer() {
                     onClick={close}
                     className="relative size-20 shrink-0 overflow-hidden"
                   >
-                    <RemoteImage src={item.image} alt={item.name} label={item.name} />
+                    <RemoteImage src={item.image} alt={item.name} label={item.name} sizes="80px" />
                   </Link>
 
                   <div className="flex flex-1 flex-col gap-1">

@@ -145,7 +145,12 @@ export function ProductDetailView({product, relatedProducts}: ProductDetailViewP
                     index === activeImageIndex ? "border-ink" : "border-transparent"
                   )}
                 >
-                  <RemoteImage src={image} alt={product.name} label={product.name} />
+                  <RemoteImage
+                    src={image}
+                    alt={product.name}
+                    label={product.name}
+                    sizes="(min-width: 1024px) 12vw, 25vw"
+                  />
                 </button>
               ))}
             </div>
@@ -212,7 +217,7 @@ export function ProductDetailView({product, relatedProducts}: ProductDetailViewP
                   >
                     {item.colorSwatch ? (
                       <span className="relative block size-full overflow-hidden" aria-hidden="true">
-                        <RemoteImage src={item.colorSwatch} alt="" />
+                        <RemoteImage src={item.colorSwatch} alt="" sizes="40px" />
                       </span>
                     ) : (
                       <span
@@ -301,6 +306,7 @@ export function ProductDetailView({product, relatedProducts}: ProductDetailViewP
                     src={product.dimensions.product.image}
                     alt={`${product.name} dimensions`}
                     label={product.name}
+                    sizes="(min-width: 1024px) 50vw, 100vw"
                   />
                 </div>
               ) : null}

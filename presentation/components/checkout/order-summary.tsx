@@ -27,7 +27,7 @@ export function OrderSummary({items, subtotal, breakdown}: OrderSummaryProps) {
         {items.map((item) => (
           <li key={item.variantSku} className="flex gap-3">
             <div className="relative size-16 shrink-0 overflow-hidden">
-              <RemoteImage src={item.image} alt={item.name} label={item.name} />
+              <RemoteImage src={item.image} alt={item.name} label={item.name} sizes="64px" />
             </div>
             <div className="flex-1 text-sm">
               <p>{item.name}</p>
