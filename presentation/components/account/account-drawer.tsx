@@ -199,20 +199,6 @@ export function AccountDrawer() {
               >
                 View Account
               </Link>
-              <Link
-                href="/checkout"
-                onClick={close}
-                className="block transition-colors duration-300 ease-brand hover:text-accent"
-              >
-                Track My Order
-              </Link>
-              <Link
-                href="/shop"
-                onClick={close}
-                className="block transition-colors duration-300 ease-brand hover:text-accent"
-              >
-                Continue Shopping
-              </Link>
             </div>
 
             <Button variant="dark" className="mt-10 w-full" onClick={handleSignOut}>
