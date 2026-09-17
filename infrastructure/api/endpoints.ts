@@ -56,5 +56,8 @@ export const API_ENDPOINTS = {
   // (Bagian 40) sengaja tidak ada di sini — dipanggil Midtrans, bukan frontend.
   checkout: {
     create: "/checkout",
+    // Beda dari GET /api/admin/order-sales/shipping-cost (Bagian 19, endpoint
+    // admin) — ini publik, POST, tidak mengecek stok.
+    shippingCost: "/checkout/shipping-cost",
   },
 } as const;

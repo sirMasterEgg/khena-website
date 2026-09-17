@@ -7,7 +7,7 @@ import type {
 } from "@/domain/services/checkout-service";
 import {API_ENDPOINTS} from "@/infrastructure/api/endpoints";
 import {apiClient} from "@/infrastructure/api/client";
-import {toCheckoutResult, toPromoValidation} from "@/infrastructure/api/mappers/checkout";
+import {toCheckoutResult, toPromoValidation, toShippingCost} from "@/infrastructure/api/mappers/checkout";
 
 /**
  * Checkout storefront — contract.md Bagian 38-39. Transport `apiClient`
@@ -19,6 +19,19 @@ export class HttpCheckoutService implements CheckoutService {
     const res = await apiClient.post(API_ENDPOINTS.promo.validate, {code, items});
     // `res.data` = envelope {data}.
     return toPromoValidation(res.data.data);
+  }
+
+  async calculateShippingCost(
+    postalCode: string,
+    items: CheckoutLineItem[],
+    signal?: AbortSignal
+  ): Promise<number> {
+    const res = await apiClient.post(
+      API_ENDPOINTS.checkout.shippingCost,
+      {postalCode, items},
+      {signal}
+    );
+    return toShippingCost(res.data.data);
   }
 
   async placeOrder(request: CheckoutRequest): Promise<CheckoutResult> {

@@ -17,6 +17,10 @@ export const promoValidationSchema = z.object({
   freeShipping: z.boolean(),
 });
 
+export const shippingCostSchema = z.object({
+  shippingCost: z.number(),
+});
+
 export const checkoutResultSchema = z.object({
   orderId: z.string(),
   invoiceNumber: z.string(),

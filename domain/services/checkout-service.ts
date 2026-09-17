@@ -50,5 +50,11 @@ export type CheckoutResult = {
  */
 export interface CheckoutService {
   validatePromo(code: string, items: CheckoutLineItem[]): Promise<PromoValidation>;
+  /**
+   * Estimasi ongkir sebelum submit — provider & rumus sama dengan yang dipakai
+   * `placeOrder`, tapi TIDAK mengecek stok (contract.md Bagian 39). Nominal
+   * final tetap dihitung ulang backend saat `placeOrder`.
+   */
+  calculateShippingCost(postalCode: string, items: CheckoutLineItem[], signal?: AbortSignal): Promise<number>;
   placeOrder(request: CheckoutRequest): Promise<CheckoutResult>;
 }

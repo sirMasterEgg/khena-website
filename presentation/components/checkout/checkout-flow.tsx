@@ -13,6 +13,7 @@ import {TextLink} from "@/presentation/components/ui/text-link";
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
 import {OrderSummary} from "@/presentation/components/checkout/order-summary";
+import type {ShippingEstimate} from "@/presentation/components/checkout/order-summary";
 import {PromoCodeField} from "@/presentation/components/checkout/promo-code-field";
 import {PaymentRedirect} from "@/presentation/components/checkout/payment-redirect";
 import {checkoutService} from "@/infrastructure/services/client";
@@ -58,6 +59,13 @@ export function CheckoutFlow() {
   const [appliedPromo, setAppliedPromo] = useState<{result: PromoValidation; cartKey: string} | null>(
     null
   );
+  // Estimasi ongkir — dikunci ke `shippingKey` (postal code + isi cart) di
+  // bawah, sama seperti pola promo: kalau key berubah, nilai lama dianggap
+  // basi dan dihitung ulang. Status "loading" sengaja TIDAK disimpan sebagai
+  // state (lihat `shippingEstimate` di bawah) — kalau `shippingKey` belum
+  // punya hasil maupun error, artinya sedang/perlu dihitung.
+  const [shippingResult, setShippingResult] = useState<{key: string; cost: number} | null>(null);
+  const [shippingErrorKey, setShippingErrorKey] = useState<string | null>(null);
 
   const {
     register,
@@ -114,7 +122,52 @@ export function CheckoutFlow() {
   const activePromo = appliedPromo && appliedPromo.cartKey === cartKey ? appliedPromo.result : null;
   const promoIsStale = appliedPromo !== null && activePromo === null;
   const discountAmount = activePromo?.discountAmount ?? 0;
-  const estimatedTotal = Math.max(subtotal - discountAmount, 0);
+
+  // Sama seperti `cartKey`, tapi ikut mengunci postal code — ganti alamat
+  // atau isi cart membuat estimasi ongkir lama tidak berlaku.
+  const shippingKey = `${values.postalCode ?? ""}|${cartKey}`;
+
+  // Hitung ongkir (contract.md Bagian 39, `POST /api/checkout/shipping-cost`)
+  // begitu masuk step Review — postal code baru pasti valid di titik ini.
+  // Dihitung ulang otomatis kalau `shippingKey` berubah (qty diubah lewat
+  // cart drawer, atau balik ke Details lalu ganti kode pos).
+  useEffect(() => {
+    if (step !== "review") return;
+    if (shippingResult?.key === shippingKey || shippingErrorKey === shippingKey) return;
+
+    const controller = new AbortController();
+
+    checkoutService
+      .calculateShippingCost(
+        values.postalCode ?? "",
+        items.map((item) => ({sku: item.variantSku, quantity: item.qty})),
+        controller.signal
+      )
+      .then((cost) => setShippingResult({key: shippingKey, cost}))
+      .catch(() => {
+        if (!controller.signal.aborted) setShippingErrorKey(shippingKey);
+      });
+
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, shippingKey]);
+
+  const shippingEstimate: ShippingEstimate =
+    shippingResult?.key === shippingKey
+      ? {status: "ready", cost: shippingResult.cost}
+      : shippingErrorKey === shippingKey
+        ? {status: "error"}
+        : {status: "loading"};
+
+  // free_shipping meniadakan ongkir di total tampilan — nominal potongan
+  // sesungguhnya (`discountAmount = shippingAmount`) baru dihitung backend
+  // saat submit (contract.md Bagian 39 langkah 6).
+  const effectiveShippingCost = activePromo?.freeShipping
+    ? 0
+    : shippingEstimate.status === "ready"
+      ? shippingEstimate.cost
+      : 0;
+  const estimatedTotal = Math.max(subtotal - discountAmount + effectiveShippingCost, 0);
 
   // "Review Order" cuma memvalidasi field step "details".
   async function handleContinueToReview() {
@@ -224,6 +277,7 @@ export function CheckoutFlow() {
                             freeShipping: activePromo.freeShipping,
                           }
                         : null,
+                      shipping: shippingEstimate,
                       estimatedTotal,
                     }
                   : undefined
@@ -312,8 +366,18 @@ export function CheckoutFlow() {
 
             {submitError ? <p className="text-xs text-danger">{submitError}</p> : null}
 
-            <Button type="submit" variant="dark" size="lg" className="w-full" disabled={isPaying}>
-              {isPaying ? "Processing…" : "Continue to Payment"}
+            <Button
+              type="submit"
+              variant="dark"
+              size="lg"
+              className="w-full"
+              disabled={isPaying || shippingEstimate.status === "loading"}
+            >
+              {isPaying
+                ? "Processing…"
+                : shippingEstimate.status === "loading"
+                  ? "Calculating shipping…"
+                  : "Continue to Payment"}
             </Button>
 
             <p className="flex items-center gap-2 text-xs text-muted">
