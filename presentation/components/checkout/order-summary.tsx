@@ -2,12 +2,18 @@ import {RemoteImage} from "@/presentation/components/ui/remote-image";
 import {formatIDR} from "@/presentation/lib/format";
 import type {CartItem} from "@/presentation/providers/cart-provider";
 
+/** Estimasi ongkir dari `POST /api/checkout/shipping-cost` — contract.md Bagian 39. */
+export type ShippingEstimate =
+  | {status: "loading"}
+  | {status: "error"}
+  | {status: "ready"; cost: number};
+
 export type OrderSummaryBreakdown = {
-  shippingFee: number | null;
-  shippingZoneName?: string;
-  requiresQuote: boolean;
-  tax: number;
-  total: number;
+  /** `null` kalau belum ada promo aktif untuk isi cart saat ini. */
+  promo: {code: string; discountAmount: number; freeShipping: boolean} | null;
+  shipping: ShippingEstimate;
+  /** Subtotal − promo (+ ongkir kalau sudah diketahui dan bukan free_shipping). */
+  estimatedTotal: number;
 };
 
 export type OrderSummaryProps = {
@@ -17,7 +23,7 @@ export type OrderSummaryProps = {
   breakdown?: OrderSummaryBreakdown;
 };
 
-/** Ringkasan pesanan checkout — bagian 4.10 issue.md. */
+/** Ringkasan pesanan checkout — contract.md Bagian 38-39, issue #43/#44. */
 export function OrderSummary({items, subtotal, breakdown}: OrderSummaryProps) {
   return (
     <div className="border border-hairline p-6">
@@ -47,31 +53,22 @@ export function OrderSummary({items, subtotal, breakdown}: OrderSummaryProps) {
 
         {breakdown ? (
           <>
+            {breakdown.promo && breakdown.promo.discountAmount > 0 ? (
+              <div className="flex justify-between">
+                <span>Promo ({breakdown.promo.code})</span>
+                <span>−{formatIDR(breakdown.promo.discountAmount)}</span>
+              </div>
+            ) : null}
             <div className="flex justify-between">
-              <span>Shipping{breakdown.shippingZoneName ? ` (${breakdown.shippingZoneName})` : ""}</span>
-              <span>
-                {breakdown.requiresQuote
-                  ? "Quote required"
-                  : breakdown.shippingFee === 0
-                    ? "Complimentary"
-                    : formatIDR(breakdown.shippingFee ?? 0)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Tax (11%)</span>
-              <span>{formatIDR(breakdown.tax)}</span>
+              <span>Shipping</span>
+              <span>{shippingLabel(breakdown)}</span>
             </div>
             <div className="flex justify-between border-t border-ink pt-2 text-base">
               <span>Total</span>
-              <span>
-                {formatIDR(breakdown.total)}
-                {breakdown.requiresQuote ? "*" : ""}
-              </span>
+              <span>{formatIDR(breakdown.estimatedTotal)}</span>
             </div>
-            {breakdown.requiresQuote ? (
-              <p className="text-xs text-muted">
-                * Final shipping cost will be confirmed by our team for this destination.
-              </p>
+            {!breakdown.promo?.freeShipping && breakdown.shipping.status !== "ready" ? (
+              <p className="text-xs text-muted">Shipping will be added on the payment page.</p>
             ) : null}
           </>
         ) : (
@@ -80,4 +77,11 @@ export function OrderSummary({items, subtotal, breakdown}: OrderSummaryProps) {
       </div>
     </div>
   );
+}
+
+function shippingLabel(breakdown: OrderSummaryBreakdown): string {
+  if (breakdown.promo?.freeShipping) return "Free shipping (promo)";
+  if (breakdown.shipping.status === "loading") return "Calculating…";
+  if (breakdown.shipping.status === "error") return "Unavailable";
+  return formatIDR(breakdown.shipping.cost);
 }

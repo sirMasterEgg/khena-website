@@ -3,4 +3,3 @@
 
 export const FREE_DELIVERY_THRESHOLD = 15_000_000; // IDR
 export const DELIVERY_FEE = 750_000; // IDR
-export const TAX_RATE = 0.11; // PPN

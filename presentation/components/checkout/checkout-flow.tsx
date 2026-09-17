@@ -1,12 +1,11 @@
 "use client";
 
-import {useState} from "react";
-import {Controller, useForm, useWatch} from "react-hook-form";
+import {useEffect, useState} from "react";
+import {useForm, useWatch} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {z} from "zod";
-import {detectShippingZone} from "@/domain/services/shipping-zone";
-import {FREE_DELIVERY_THRESHOLD, TAX_RATE} from "@/presentation/lib/constants";
-import {formatIDR} from "@/presentation/lib/format";
+import {toCheckoutErrorMessage} from "@/presentation/lib/checkout-errors";
+import {ApiError} from "@/infrastructure/api/client";
 import {Button} from "@/presentation/components/ui/button";
 import {Container} from "@/presentation/components/ui/container";
 import {FormField} from "@/presentation/components/ui/form-field";
@@ -14,42 +13,67 @@ import {TextLink} from "@/presentation/components/ui/text-link";
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
 import {OrderSummary} from "@/presentation/components/checkout/order-summary";
-import {PaymentMethodPicker} from "@/presentation/components/checkout/payment-method-picker";
-import {WhatsAppPaymentGateway} from "@/infrastructure/payment/whatsapp-payment-gateway";
+import type {ShippingEstimate} from "@/presentation/components/checkout/order-summary";
+import {PromoCodeField} from "@/presentation/components/checkout/promo-code-field";
+import {PaymentRedirect} from "@/presentation/components/checkout/payment-redirect";
+import {checkoutService} from "@/infrastructure/services/client";
+import type {PromoValidation} from "@/domain/services/checkout-service";
+import {useAuth} from "@/presentation/providers/auth-provider";
 import {useCart} from "@/presentation/providers/cart-provider";
 import {useUi} from "@/presentation/providers/ui-provider";
 
 type Step = "details" | "review";
 
 // Field yang divalidasi sebelum boleh lanjut dari step "details" ke "review".
-const DETAILS_FIELDS = ["fullName", "phone", "email", "address", "city"] as const;
+const DETAILS_FIELDS = ["fullName", "phone", "email", "address", "city", "province", "postalCode"] as const;
 
 const checkoutSchema = z.object({
-  fullName: z.string().trim().min(1, "Full name is required"),
-  phone: z.string().trim().min(1, "Phone number is required"),
-  email: z.string().trim().min(1, "Email is required").email("Enter a valid email address"),
+  fullName: z.string().trim().min(1, "Full name is required").max(255, "Full name is too long"),
+  phone: z.string().trim().min(1, "Phone number is required").max(20, "Phone number is too long"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Enter a valid email address")
+    .max(255, "Email is too long"),
   address: z.string().trim().min(1, "Street address is required"),
-  city: z.string().trim().min(1, "City is required"),
-  province: z.string().optional(),
-  postalCode: z.string().optional(),
+  city: z.string().trim().min(1, "City is required").max(100, "City is too long"),
+  province: z.string().trim().min(1, "Province is required").max(100, "Province is too long"),
+  postalCode: z.string().trim().regex(/^[0-9]{5}$/, "Postal code must be 5 digits"),
   notes: z.string().optional(),
-  paymentMethod: z.enum(["virtual-account", "e-wallet", "credit-card"]),
 });
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
-/** Alur checkout dua langkah — bagian 4.10 issue.md. */
+/** Alur checkout dua langkah, terhubung ke API — contract.md Bagian 38-39 (issue #43). */
 export function CheckoutFlow() {
-  const {items, subtotal, isHydrated} = useCart();
+  const {items, subtotal, isHydrated, clearCart} = useCart();
   const {open: openOverlay} = useUi();
+  const {user, isPending: isAuthPending} = useAuth();
   const [step, setStep] = useState<Step>("details");
   const [isPaying, setIsPaying] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  // Promo yang berhasil di-apply, dikunci ke isi cart saat itu (lihat `cartKey`
+  // di bawah) — kalau cart berubah sesudahnya, nominalnya sudah tidak valid.
+  const [appliedPromo, setAppliedPromo] = useState<{result: PromoValidation; cartKey: string} | null>(
+    null
+  );
+  // Estimasi ongkir — dikunci ke `shippingKey` (postal code + isi cart) di
+  // bawah, sama seperti pola promo: kalau key berubah, nilai lama dianggap
+  // basi dan dihitung ulang. Status "loading" sengaja TIDAK disimpan sebagai
+  // state (lihat `shippingEstimate` di bawah) — kalau `shippingKey` belum
+  // punya hasil maupun error, artinya sedang/perlu dihitung.
+  const [shippingResult, setShippingResult] = useState<{key: string; cost: number} | null>(null);
+  const [shippingErrorKey, setShippingErrorKey] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     trigger,
     control,
+    getValues,
+    setValue,
     formState: {errors},
   } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -62,62 +86,133 @@ export function CheckoutFlow() {
       province: "",
       postalCode: "",
       notes: "",
-      paymentMethod: "virtual-account",
     },
   });
+
+  // Autofill dari akun — hanya field yang masih kosong, supaya isian yang sudah
+  // diketik tamu sebelum login tidak tertimpa. Dijalankan ulang saat user
+  // berganti (login di tengah checkout), tidak melakukan apa-apa saat logout.
+  useEffect(() => {
+    if (!user) return;
+
+    const fromAccount = [
+      ["fullName", user.name],
+      ["phone", user.phone],
+      ["email", user.email],
+    ] as const;
+
+    for (const [field, accountValue] of fromAccount) {
+      const current = getValues(field) ?? "";
+      const next = (accountValue ?? "").trim();
+      if (!current.trim() && next) {
+        setValue(field, next, {shouldValidate: true});
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // `useWatch` (bukan `form.watch()`) supaya kompatibel dengan React
   // Compiler — `watch()` mengembalikan fungsi yang tidak bisa di-memoize.
   const values = useWatch({control});
-  const city = values.city ?? "";
 
-  const zone = city.trim() ? detectShippingZone(city) : undefined;
-  const shippingFee = !zone
-    ? null
-    : zone.requiresQuote
-      ? null
-      : zone.freeThreshold !== null && subtotal >= zone.freeThreshold
-        ? 0
-        : zone.fee;
-  const tax = Math.round(subtotal * TAX_RATE);
-  const total = subtotal + (shippingFee ?? 0) + tax;
+  // Kunci isi cart saat promo di-apply. Kalau berubah (mis. qty diubah lewat
+  // cart drawer), nominal promo sudah tidak valid — anggap belum di-apply dan
+  // minta user apply ulang, bukan diam-diam memakai nominal lama.
+  const cartKey = items.map((item) => `${item.variantSku}:${item.qty}`).join("|");
+  const activePromo = appliedPromo && appliedPromo.cartKey === cartKey ? appliedPromo.result : null;
+  const promoIsStale = appliedPromo !== null && activePromo === null;
+  const discountAmount = activePromo?.discountAmount ?? 0;
 
-  // "Review Order" cuma memvalidasi field step "details" — paymentMethod
-  // sudah selalu punya default, jadi tidak perlu ikut di-trigger di sini.
+  // Sama seperti `cartKey`, tapi ikut mengunci postal code — ganti alamat
+  // atau isi cart membuat estimasi ongkir lama tidak berlaku.
+  const shippingKey = `${values.postalCode ?? ""}|${cartKey}`;
+
+  // Hitung ongkir (contract.md Bagian 39, `POST /api/checkout/shipping-cost`)
+  // begitu masuk step Review — postal code baru pasti valid di titik ini.
+  // Dihitung ulang otomatis kalau `shippingKey` berubah (qty diubah lewat
+  // cart drawer, atau balik ke Details lalu ganti kode pos).
+  useEffect(() => {
+    if (step !== "review") return;
+    if (shippingResult?.key === shippingKey || shippingErrorKey === shippingKey) return;
+
+    const controller = new AbortController();
+
+    checkoutService
+      .calculateShippingCost(
+        values.postalCode ?? "",
+        items.map((item) => ({sku: item.variantSku, quantity: item.qty})),
+        controller.signal
+      )
+      .then((cost) => setShippingResult({key: shippingKey, cost}))
+      .catch(() => {
+        if (!controller.signal.aborted) setShippingErrorKey(shippingKey);
+      });
+
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, shippingKey]);
+
+  const shippingEstimate: ShippingEstimate =
+    shippingResult?.key === shippingKey
+      ? {status: "ready", cost: shippingResult.cost}
+      : shippingErrorKey === shippingKey
+        ? {status: "error"}
+        : {status: "loading"};
+
+  // free_shipping meniadakan ongkir di total tampilan — nominal potongan
+  // sesungguhnya (`discountAmount = shippingAmount`) baru dihitung backend
+  // saat submit (contract.md Bagian 39 langkah 6).
+  const effectiveShippingCost = activePromo?.freeShipping
+    ? 0
+    : shippingEstimate.status === "ready"
+      ? shippingEstimate.cost
+      : 0;
+  const estimatedTotal = Math.max(subtotal - discountAmount + effectiveShippingCost, 0);
+
+  // "Review Order" cuma memvalidasi field step "details".
   async function handleContinueToReview() {
     const valid = await trigger(DETAILS_FIELDS);
     if (valid) setStep("review");
   }
 
-  async function handlePay(formValues: CheckoutFormValues) {
+  async function handlePlaceOrder(formValues: CheckoutFormValues) {
+    setSubmitError(null);
     setIsPaying(true);
-    const gateway = new WhatsAppPaymentGateway();
-    const result = await gateway.createOrder({
-      customerName: formValues.fullName,
-      customerPhone: formValues.phone,
-      customerEmail: formValues.email,
-      shippingAddress: [formValues.address, formValues.city, formValues.province, formValues.postalCode]
-        .filter(Boolean)
-        .join(", "),
-      shippingZoneName: zone?.name ?? "Unknown",
-      items: items.map((item) => ({
-        sku: item.variantSku,
-        name: item.name,
-        color: item.colorName,
-        qty: item.qty,
-        price: item.priceAfterDiscount,
-      })),
-      subtotal,
-      shippingFee,
-      tax,
-      total,
-    });
-
-    if (result.redirectUrl) {
-      window.location.assign(result.redirectUrl);
-    } else {
+    try {
+      const result = await checkoutService.placeOrder({
+        name: formValues.fullName, // API memakai `name`, bukan `fullName`
+        email: formValues.email,
+        phone: formValues.phone,
+        address: formValues.address,
+        city: formValues.city,
+        province: formValues.province,
+        postalCode: formValues.postalCode,
+        deliveryNotes: formValues.notes?.trim() || undefined, // API memakai `deliveryNotes`
+        promoCode: activePromo?.code, // hanya promo yang masih valid untuk isi cart ini
+        items: items.map((item) => ({sku: item.variantSku, quantity: item.qty})),
+      });
+      // Urutan penting: set URL pembayaran dulu, baru kosongkan cart. Render
+      // di bawah memeriksa `paymentUrl` SEBELUM cek cart kosong.
+      setPaymentUrl(result.redirectUrl);
+      clearCart();
+    } catch (error) {
+      setSubmitError(toCheckoutErrorMessage(error, items));
+      // Promo yang ditolak backend (mis. baru saja kedaluwarsa/limit habis)
+      // tidak boleh terus dipakai di percobaan submit berikutnya.
+      if (submitErrorIsPromoRelated(error)) setAppliedPromo(null);
       setIsPaying(false);
     }
+  }
+
+  // Setelah checkout sukses, pindah ke halaman pembayaran Midtrans. Dirender
+  // paling atas, sebelum cek cart kosong — cart sudah dikosongkan di titik ini.
+  if (paymentUrl) {
+    return (
+      <Container className="flex flex-col items-center gap-4 py-30 text-center">
+        <p className="font-display text-h3">Redirecting to payment…</p>
+        <PaymentRedirect url={paymentUrl} />
+      </Container>
+    );
   }
 
   if (isHydrated && items.length === 0) {
@@ -131,7 +226,7 @@ export function CheckoutFlow() {
   }
 
   return (
-    <Container as="form" onSubmit={handleSubmit(handlePay)} noValidate className="py-10">
+    <Container as="form" onSubmit={handleSubmit(handlePlaceOrder)} noValidate className="py-10">
       <nav className="flex items-center gap-2 text-xs uppercase tracking-label text-muted">
         <button type="button" onClick={() => openOverlay("cart")} className="hover:text-ink">
           Bag ({items.reduce((sum, item) => sum + item.qty, 0)})
@@ -149,9 +244,19 @@ export function CheckoutFlow() {
         <span className={step === "review" ? "text-ink" : undefined}>Review</span>
       </nav>
 
-      {/* Banner "Save this to your account" untuk tamu dihapus di ISSUE-17:
-          halaman /checkout sekarang dibungkus <RequireAuth>, jadi
-          CheckoutFlow tidak pernah dirender untuk tamu lagi. */}
+      {/* Ajakan login untuk tamu — tidak memblokir checkout. Disembunyikan selama
+          sesi masih dimuat supaya banner tidak berkedip untuk user yang login. */}
+      {!isAuthPending && !user ? (
+        <div className="mt-8 border border-hairline bg-warm p-6">
+          <p className="text-sm">Have an account?</p>
+          <p className="mt-1 text-xs text-muted">
+            Sign in to fill in your details automatically — or continue as a guest.
+          </p>
+          <TextLink onClick={() => openOverlay("account")} className="mt-3 inline-block">
+            Sign In or Create Account →
+          </TextLink>
+        </div>
+      ) : null}
 
       <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_400px]">
         {/* Order Summary tampil duluan di mobile (di atas form) supaya
@@ -165,18 +270,28 @@ export function CheckoutFlow() {
               breakdown={
                 step === "review"
                   ? {
-                      shippingFee,
-                      shippingZoneName: zone?.name,
-                      requiresQuote: zone?.requiresQuote ?? false,
-                      tax,
-                      total,
+                      promo: activePromo
+                        ? {
+                            code: activePromo.code,
+                            discountAmount: activePromo.discountAmount,
+                            freeShipping: activePromo.freeShipping,
+                          }
+                        : null,
+                      shipping: shippingEstimate,
+                      estimatedTotal,
                     }
                   : undefined
               }
             />
-            {step === "details" && subtotal < FREE_DELIVERY_THRESHOLD ? (
-              <p className="mt-3 text-xs text-muted">
-                Spend {formatIDR(FREE_DELIVERY_THRESHOLD - subtotal)} more for complimentary delivery.
+            <PromoCodeField
+              items={items}
+              applied={activePromo}
+              onApply={(result) => setAppliedPromo({result, cartKey})}
+              onRemove={() => setAppliedPromo(null)}
+            />
+            {promoIsStale ? (
+              <p className="mt-2 text-xs text-danger">
+                Your bag changed — please apply the code again.
               </p>
             ) : null}
           </div>
@@ -212,25 +327,15 @@ export function CheckoutFlow() {
               />
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
                 <FormField label="City" {...register("city")} error={errors.city?.message} />
-                <FormField label="Province" {...register("province")} />
-                <FormField label="Postal Code" {...register("postalCode")} />
+                <FormField label="Province" {...register("province")} error={errors.province?.message} />
+                <FormField
+                  label="Postal Code"
+                  inputMode="numeric"
+                  maxLength={5}
+                  {...register("postalCode")}
+                  error={errors.postalCode?.message}
+                />
               </div>
-
-              {zone ? (
-                <div className="border border-hairline bg-warm p-4 text-sm">
-                  <p>
-                    {zone.name}
-                    {zone.courier ? ` · ${zone.courier}` : ""}
-                  </p>
-                  <p className="mt-1 text-muted">
-                    {zone.requiresQuote
-                      ? "Shipping quote required — our team will confirm the cost."
-                      : shippingFee === 0
-                        ? "Complimentary delivery applies."
-                        : formatIDR(shippingFee ?? 0)}
-                  </p>
-                </div>
-              ) : null}
 
               <FormField
                 as="textarea"
@@ -238,15 +343,6 @@ export function CheckoutFlow() {
                 hint="Optional"
                 rows={2}
                 {...register("notes")}
-              />
-            </section>
-
-            <section className="space-y-6">
-              <h2 className="font-display text-h3">Payment Method</h2>
-              <Controller
-                control={control}
-                name="paymentMethod"
-                render={({field}) => <PaymentMethodPicker value={field.value} onChange={field.onChange} />}
               />
             </section>
 
@@ -265,15 +361,28 @@ export function CheckoutFlow() {
               <p>{values.phone}</p>
               <p>{values.email}</p>
               <p>{[values.address, values.city, values.province, values.postalCode].filter(Boolean).join(", ")}</p>
+              {values.notes ? <p>{values.notes}</p> : null}
             </div>
 
-            <Button type="submit" variant="dark" size="lg" className="w-full" disabled={isPaying}>
-              {isPaying ? "Processing…" : `Pay ${formatIDR(total)}`}
+            {submitError ? <p className="text-xs text-danger">{submitError}</p> : null}
+
+            <Button
+              type="submit"
+              variant="dark"
+              size="lg"
+              className="w-full"
+              disabled={isPaying || shippingEstimate.status === "loading"}
+            >
+              {isPaying
+                ? "Processing…"
+                : shippingEstimate.status === "loading"
+                  ? "Calculating shipping…"
+                  : "Continue to Payment"}
             </Button>
 
             <p className="flex items-center gap-2 text-xs text-muted">
               <Icon icon={ICONS.lock} className="size-3.5" />
-              Payments are processed securely by Xendit.
+              Payments are processed securely by Midtrans.
             </p>
 
             <button
@@ -288,4 +397,9 @@ export function CheckoutFlow() {
       </div>
     </Container>
   );
+}
+
+/** Pesan promo (contract.md Bagian 38) selalu diawali "promo code" — dipakai untuk keputusan reset. */
+function submitErrorIsPromoRelated(error: unknown): boolean {
+  return error instanceof ApiError && (error.serverMessage?.startsWith("promo code") ?? false);
 }

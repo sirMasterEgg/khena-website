@@ -31,6 +31,8 @@ type CartContextValue = {
   addItem: (input: AddToCartInput, qty?: number) => void;
   updateQty: (variantSku: string, qty: number) => void;
   removeItem: (variantSku: string) => void;
+  /** Dipanggil setelah checkout berhasil (issue #43) — order sudah terbentuk di backend. */
+  clearCart: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -95,6 +97,10 @@ export function CartProvider({children}: {children: ReactNode}) {
     setItems((prev) => prev.filter((item) => item.variantSku !== variantSku));
   }, []);
 
+  const clearCart = useCallback(() => {
+    setItems([]);
+  }, []);
+
   const itemCount = useMemo(() => items.reduce((sum, item) => sum + item.qty, 0), [items]);
   const subtotal = useMemo(
     () => items.reduce((sum, item) => sum + item.priceAfterDiscount * item.qty, 0),
@@ -102,8 +108,8 @@ export function CartProvider({children}: {children: ReactNode}) {
   );
 
   const value = useMemo<CartContextValue>(
-    () => ({items, itemCount, subtotal, isHydrated, addItem, updateQty, removeItem}),
-    [items, itemCount, subtotal, isHydrated, addItem, updateQty, removeItem]
+    () => ({items, itemCount, subtotal, isHydrated, addItem, updateQty, removeItem, clearCart}),
+    [items, itemCount, subtotal, isHydrated, addItem, updateQty, removeItem, clearCart]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
