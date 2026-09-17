@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {Controller, useForm, useWatch} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {z} from "zod";
@@ -16,6 +16,7 @@ import {ICONS} from "@/presentation/components/icons";
 import {OrderSummary} from "@/presentation/components/checkout/order-summary";
 import {PaymentMethodPicker} from "@/presentation/components/checkout/payment-method-picker";
 import {WhatsAppPaymentGateway} from "@/infrastructure/payment/whatsapp-payment-gateway";
+import {useAuth} from "@/presentation/providers/auth-provider";
 import {useCart} from "@/presentation/providers/cart-provider";
 import {useUi} from "@/presentation/providers/ui-provider";
 
@@ -42,6 +43,7 @@ type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 export function CheckoutFlow() {
   const {items, subtotal, isHydrated} = useCart();
   const {open: openOverlay} = useUi();
+  const {user, isPending: isAuthPending} = useAuth();
   const [step, setStep] = useState<Step>("details");
   const [isPaying, setIsPaying] = useState(false);
 
@@ -50,6 +52,8 @@ export function CheckoutFlow() {
     handleSubmit,
     trigger,
     control,
+    getValues,
+    setValue,
     formState: {errors},
   } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -65,6 +69,28 @@ export function CheckoutFlow() {
       paymentMethod: "virtual-account",
     },
   });
+
+  // Autofill dari akun — hanya field yang masih kosong, supaya isian yang sudah
+  // diketik tamu sebelum login tidak tertimpa. Dijalankan ulang saat user
+  // berganti (login di tengah checkout), tidak melakukan apa-apa saat logout.
+  useEffect(() => {
+    if (!user) return;
+
+    const fromAccount = [
+      ["fullName", user.name],
+      ["phone", user.phone],
+      ["email", user.email],
+    ] as const;
+
+    for (const [field, accountValue] of fromAccount) {
+      const current = getValues(field) ?? "";
+      const next = (accountValue ?? "").trim();
+      if (!current.trim() && next) {
+        setValue(field, next, {shouldValidate: true});
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // `useWatch` (bukan `form.watch()`) supaya kompatibel dengan React
   // Compiler — `watch()` mengembalikan fungsi yang tidak bisa di-memoize.
@@ -149,9 +175,19 @@ export function CheckoutFlow() {
         <span className={step === "review" ? "text-ink" : undefined}>Review</span>
       </nav>
 
-      {/* Banner "Save this to your account" untuk tamu dihapus di ISSUE-17:
-          halaman /checkout sekarang dibungkus <RequireAuth>, jadi
-          CheckoutFlow tidak pernah dirender untuk tamu lagi. */}
+      {/* Ajakan login untuk tamu — tidak memblokir checkout. Disembunyikan selama
+          sesi masih dimuat supaya banner tidak berkedip untuk user yang login. */}
+      {!isAuthPending && !user ? (
+        <div className="mt-8 border border-hairline bg-warm p-6">
+          <p className="text-sm">Have an account?</p>
+          <p className="mt-1 text-xs text-muted">
+            Sign in to fill in your details automatically — or continue as a guest.
+          </p>
+          <TextLink onClick={() => openOverlay("account")} className="mt-3 inline-block">
+            Sign In or Create Account →
+          </TextLink>
+        </div>
+      ) : null}
 
       <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_400px]">
         {/* Order Summary tampil duluan di mobile (di atas form) supaya
