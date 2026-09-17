@@ -14,12 +14,18 @@ import {clientEnv} from "@/config/env.client";
 export class ApiError extends Error {
   readonly status?: number;
   readonly isUnauthorized: boolean;
+  /** `error.code` dari envelope backend, mis. `BAD_REQUEST`, `VALIDATION_ERROR`. */
+  readonly code?: string;
+  /** `error.message` asli dari backend tanpa prefix, mis. `promo code not found`. */
+  readonly serverMessage?: string;
 
-  constructor(message: string, status?: number) {
+  constructor(message: string, status?: number, code?: string, serverMessage?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.isUnauthorized = status === 401;
+    this.code = code;
+    this.serverMessage = serverMessage;
   }
 }
 
@@ -44,7 +50,7 @@ apiClient.interceptors.response.use(
     // kalau tidak pesan asli tidak pernah terbaca (bug Fase 1 issue #27).
     const message = data?.error?.message ?? error.message ?? "Unknown API error";
     return Promise.reject(
-      new ApiError(`API error${status ? ` ${status}` : ""}: ${message}`, status)
+      new ApiError(`API error${status ? ` ${status}` : ""}: ${message}`, status, data?.error?.code, data?.error?.message)
     );
   }
 );

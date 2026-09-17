@@ -47,4 +47,14 @@ export const API_ENDPOINTS = {
     detail: (idOrSlug: string) => `/careers/${idOrSlug}`,
     apply: "/careers/apply",
   },
+  // contract.md Bagian 38. BUKAN "/admin/discounts" (Bagian 17, endpoint dashboard
+  // admin) dan BUKAN "/api/promo/validate" — base URL sudah mengandung /api.
+  promo: {
+    validate: "/promo/validate",
+  },
+  // contract.md Bagian 39. BUKAN "/admin/order-sales" (Bagian 19). Webhook Midtrans
+  // (Bagian 40) sengaja tidak ada di sini — dipanggil Midtrans, bukan frontend.
+  checkout: {
+    create: "/checkout",
+  },
 } as const;
