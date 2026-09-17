@@ -1,7 +1,7 @@
-import type {ProductDetail} from "@/infrastructure/api/schemas/product";
+import type {FeaturedProductResponse} from "@/infrastructure/api/schemas/product";
 import type {FeaturedProduct} from "@/domain/entities/featured-product";
 
-export function toFeaturedProduct(product: ProductDetail): FeaturedProduct {
+export function toFeaturedProduct(product: FeaturedProductResponse): FeaturedProduct {
   const firstVariant = product.variants[0];
   return {
     id: product.id,

@@ -2,19 +2,25 @@
 
 import {createContext, useCallback, useContext, useEffect, useMemo, useState} from "react";
 import type {ReactNode} from "react";
-import type {ColorSwatchKey} from "@/domain/entities/color-swatch";
-import type {Product} from "@/domain/entities/product";
 
 export type CartItem = {
-  productId: string;
+  /** `products.base_sku` — untuk menaut balik ke /product/[sku]. */
+  productSku: string;
+  /** `detail_products.detail_product_sku` — identitas baris cart (D9). */
+  variantSku: string;
   name: string;
+  image?: string;
+  colorName?: string;
+  colorHex?: string;
+  /** Harga normal, dipakai untuk teks dicoret. */
   price: number;
-  comparePrice?: number;
-  color?: ColorSwatchKey;
-  colorLabel?: string;
+  /** Harga yang dibayar — semua total memakai ini. */
+  priceAfterDiscount: number;
   stock: number;
   qty: number;
 };
+
+export type AddToCartInput = Omit<CartItem, "qty">;
 
 type CartContextValue = {
   items: CartItem[];
@@ -22,18 +28,16 @@ type CartContextValue = {
   subtotal: number;
   /** `true` setelah cart selesai dibaca dari localStorage (lihat bagian 2.7). */
   isHydrated: boolean;
-  addItem: (product: Product, color?: ColorSwatchKey, colorLabel?: string, qty?: number) => void;
-  updateQty: (productId: string, color: ColorSwatchKey | undefined, qty: number) => void;
-  removeItem: (productId: string, color: ColorSwatchKey | undefined) => void;
+  addItem: (input: AddToCartInput, qty?: number) => void;
+  updateQty: (variantSku: string, qty: number) => void;
+  removeItem: (variantSku: string) => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
-const STORAGE_KEY = "khena.cart";
-
-/** Identitas item cart = kombinasi id + color — bagian 2.7 issue.md. */
-function itemKey(productId: string, color?: string) {
-  return `${productId}::${color ?? ""}`;
-}
+// Bentuk CartItem lama (berbasis productId + color swatch) tidak kompatibel
+// dengan bentuk berbasis varian (issue #40, D9/D10). Bump key supaya cart
+// lama di browser pengunjung diabaikan alih-alih dibaca dalam bentuk salah.
+const STORAGE_KEY = "khena.cart.v2";
 
 export function CartProvider({children}: {children: ReactNode}) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -60,60 +64,40 @@ export function CartProvider({children}: {children: ReactNode}) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items, isHydrated]);
 
-  const addItem = useCallback(
-    (product: Product, color?: ColorSwatchKey, colorLabel?: string, qty = 1) => {
-      setItems((prev) => {
-        const key = itemKey(product.id, color);
-        const existing = prev.find((item) => itemKey(item.productId, item.color) === key);
+  const addItem = useCallback((input: AddToCartInput, qty = 1) => {
+    setItems((prev) => {
+      const existing = prev.find((item) => item.variantSku === input.variantSku);
 
-        if (existing) {
-          return prev.map((item) =>
-            itemKey(item.productId, item.color) === key
-              ? {...item, qty: Math.min(item.qty + qty, product.stock)}
-              : item
-          );
-        }
-
-        return [
-          ...prev,
-          {
-            productId: product.id,
-            name: product.name,
-            price: product.price,
-            comparePrice: product.comparePrice,
-            color,
-            colorLabel,
-            stock: product.stock,
-            qty: Math.min(qty, product.stock),
-          },
-        ];
-      });
-    },
-    []
-  );
-
-  const updateQty = useCallback(
-    (productId: string, color: ColorSwatchKey | undefined, qty: number) => {
-      const key = itemKey(productId, color);
-      setItems((prev) =>
-        prev.map((item) =>
-          itemKey(item.productId, item.color) === key
-            ? {...item, qty: Math.max(1, Math.min(qty, item.stock))}
+      if (existing) {
+        // Harga/stok bisa berubah sejak item masuk cart — segarkan dari input.
+        return prev.map((item) =>
+          item.variantSku === input.variantSku
+            ? {...item, ...input, qty: Math.min(item.qty + qty, input.stock)}
             : item
-        )
-      );
-    },
-    []
-  );
+        );
+      }
 
-  const removeItem = useCallback((productId: string, color: ColorSwatchKey | undefined) => {
-    const key = itemKey(productId, color);
-    setItems((prev) => prev.filter((item) => itemKey(item.productId, item.color) !== key));
+      return [...prev, {...input, qty: Math.min(qty, input.stock)}];
+    });
+  }, []);
+
+  const updateQty = useCallback((variantSku: string, qty: number) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.variantSku === variantSku
+          ? {...item, qty: Math.max(1, Math.min(qty, item.stock))}
+          : item
+      )
+    );
+  }, []);
+
+  const removeItem = useCallback((variantSku: string) => {
+    setItems((prev) => prev.filter((item) => item.variantSku !== variantSku));
   }, []);
 
   const itemCount = useMemo(() => items.reduce((sum, item) => sum + item.qty, 0), [items]);
   const subtotal = useMemo(
-    () => items.reduce((sum, item) => sum + item.price * item.qty, 0),
+    () => items.reduce((sum, item) => sum + item.priceAfterDiscount * item.qty, 0),
     [items]
   );
 

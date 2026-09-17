@@ -2,7 +2,7 @@ import type {FeaturedProductRepository} from "@/domain/repositories/featured-pro
 import type {FeaturedProduct} from "@/domain/entities/featured-product";
 import {API_ENDPOINTS} from "@/infrastructure/api/endpoints";
 import {serverFetch} from "@/infrastructure/api/server-fetch";
-import {productDetailSchema} from "@/infrastructure/api/schemas/product";
+import {featuredProductSchema} from "@/infrastructure/api/schemas/product";
 import {toFeaturedProduct} from "@/infrastructure/api/mappers/featured-product";
 
 // Tidak ada endpoint batch untuk produk (contract.md bagian 33) — satu request
@@ -19,9 +19,12 @@ export class HttpFeaturedProductRepository implements FeaturedProductRepository 
     // mengembalikan 400 dan tidak boleh menjatuhkan seluruh section.
     // allSettled menjaga urutan index (urutan editorial dari CMS), jadi hasil
     // gagal cukup dibuang tanpa perlu disortir ulang.
+    // `products.detailById`, BUKAN `products.detail` — CMS `designedForLife.productIds`
+    // berisi uuid `products.id`, sementara `products.detail`/`:sku` sejak issue #40
+    // hanya menerima SKU (contract.md Bagian 33: `GET /api/products/id/:id`).
     const results = await Promise.allSettled(
       targetIds.map((id) =>
-        serverFetch<unknown>(API_ENDPOINTS.products.detail(id), {
+        serverFetch<unknown>(API_ENDPOINTS.products.detailById(id), {
           revalidateSeconds: 300,
           tags: ["products:detail", `products:detail:${id}`],
         })
@@ -34,7 +37,7 @@ export class HttpFeaturedProductRepository implements FeaturedProductRepository 
         console.warn(`[featured-product] gagal memuat produk ${targetIds[index]}`, result.reason);
         return;
       }
-      const parsed = productDetailSchema.safeParse(result.value);
+      const parsed = featuredProductSchema.safeParse(result.value);
       if (!parsed.success) {
         console.warn(`[featured-product] bentuk data tidak valid untuk produk ${targetIds[index]}`);
         return;

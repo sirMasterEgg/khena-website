@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import {Drawer} from "@/presentation/components/ui/drawer";
-import {PlaceholderImage} from "@/presentation/components/ui/placeholder-image";
+import {RemoteImage} from "@/presentation/components/ui/remote-image";
 import {Button} from "@/presentation/components/ui/button";
 import {TextLink} from "@/presentation/components/ui/text-link";
 import {Icon} from "@/presentation/components/icon";
 import {ICONS} from "@/presentation/components/icons";
-import {COLOR_SWATCHES} from "@/domain/entities/color-swatch";
 import {formatIDR} from "@/presentation/lib/format";
 import {FREE_DELIVERY_THRESHOLD} from "@/presentation/lib/constants";
 import {useCart} from "@/presentation/providers/cart-provider";
@@ -64,29 +63,32 @@ export function CartDrawer() {
 
           <ul className="flex-1 divide-y divide-hairline overflow-y-auto px-6">
             {items.map((item) => {
-              const colorSwatch = item.color ? COLOR_SWATCHES[item.color] : undefined;
-              const itemTotal = item.price * item.qty;
-              const compareTotal = item.comparePrice ? item.comparePrice * item.qty : undefined;
+              const itemTotal = item.priceAfterDiscount * item.qty;
+              const compareTotal = item.price * item.qty;
 
               return (
-                <li key={`${item.productId}::${item.color ?? ""}`} className="flex gap-4 py-6">
-                  <Link href={`/product/${item.productId}`} onClick={close} className="size-20 shrink-0">
-                    <PlaceholderImage label={item.name} />
+                <li key={item.variantSku} className="flex gap-4 py-6">
+                  <Link
+                    href={`/product/${item.productSku}`}
+                    onClick={close}
+                    className="relative size-20 shrink-0 overflow-hidden"
+                  >
+                    <RemoteImage src={item.image} alt={item.name} label={item.name} sizes="80px" />
                   </Link>
 
                   <div className="flex flex-1 flex-col gap-1">
-                    <Link href={`/product/${item.productId}`} onClick={close} className="text-sm">
+                    <Link href={`/product/${item.productSku}`} onClick={close} className="text-sm">
                       {item.name}
                     </Link>
 
-                    {colorSwatch ? (
+                    {item.colorName ? (
                       <p className="flex items-center gap-2 text-xs text-muted">
                         <span
                           className="size-2.5 shrink-0 rounded-full"
-                          style={{backgroundColor: colorSwatch.chipColor}}
+                          style={{backgroundColor: item.colorHex ?? "#E4E2DD"}}
                           aria-hidden="true"
                         />
-                        {colorSwatch.label}
+                        {item.colorName}
                       </p>
                     ) : null}
 
@@ -96,7 +98,7 @@ export function CartDrawer() {
                           type="button"
                           aria-label={`Decrease quantity of ${item.name}`}
                           className="px-3 py-1"
-                          onClick={() => updateQty(item.productId, item.color, item.qty - 1)}
+                          onClick={() => updateQty(item.variantSku, item.qty - 1)}
                         >
                           −
                         </button>
@@ -105,14 +107,14 @@ export function CartDrawer() {
                           type="button"
                           aria-label={`Increase quantity of ${item.name}`}
                           className="px-3 py-1"
-                          onClick={() => updateQty(item.productId, item.color, item.qty + 1)}
+                          onClick={() => updateQty(item.variantSku, item.qty + 1)}
                         >
                           +
                         </button>
                       </div>
 
                       <div className="text-right text-sm">
-                        {compareTotal && compareTotal > itemTotal ? (
+                        {item.price > item.priceAfterDiscount ? (
                           <p className="text-xs text-muted line-through">{formatIDR(compareTotal)}</p>
                         ) : null}
                         <p>{formatIDR(itemTotal)}</p>
@@ -122,7 +124,7 @@ export function CartDrawer() {
                     <button
                       type="button"
                       className="mt-1 self-start text-xs uppercase tracking-label text-muted hover:text-ink"
-                      onClick={() => removeItem(item.productId, item.color)}
+                      onClick={() => removeItem(item.variantSku)}
                     >
                       Remove
                     </button>
@@ -140,13 +142,6 @@ export function CartDrawer() {
             <Button href="/checkout" variant="dark" size="lg" className="w-full" onClick={close}>
               Proceed to Checkout
             </Button>
-            <button
-              type="button"
-              onClick={close}
-              className="w-full text-center text-xs uppercase tracking-label text-muted hover:text-ink"
-            >
-              Continue shopping
-            </button>
           </div>
         </>
       )}
